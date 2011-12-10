@@ -3,7 +3,7 @@
 .x-htmleditor-imageupload-bordeResize{
 	cursor:nw-resize;border:2px dotted #ccc !important;
 	padding:0px 16px 16px 0px;
-	background-image:url( arrow-resize.png);
+	background-image:url(../img/arrow-resize.png);
 	background-position:bottom right;
 	background-repeat:no-repeat;
 }

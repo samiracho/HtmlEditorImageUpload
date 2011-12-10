@@ -446,7 +446,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                         me.down('#src').setValue(o.result.data['url']);
                                     },
                                     failure: function (form, action) {
-                                        console.log(action);
                                         Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
                                         me.down('[name=photo-path]').reset();
                                     }
