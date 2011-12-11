@@ -494,7 +494,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							},
 							select: function()
 							{
+								var combo = me.down('#src');
+								var value = combo.getValue();
 								me.down('form').getForm().reset();
+								combo.setRawValue(value);
 							},
 							el: {
 								click: {
