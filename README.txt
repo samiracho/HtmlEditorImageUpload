@@ -37,7 +37,8 @@ lang:
 		'Insert/Edit Image': 'Insertar/Editar Imagen','Upload Image...': 'Subir Imagen...','Uploading your photo...': 'Subiendo su imagen...',
 		'Error': 'Error','Width': 'Ancho','Height': 'Alto','Align': 'Alineación','Title': 'Título','Class': 'Clase','Padding': 'Relleno','Margin': 'Margen',
 		'Top': 'Superior','Bottom': 'Inferior','Right': 'Derecha','Left': 'Izquierda','None': 'Ninguna','Size & Details': 'Tamaño y Detalles',
-		'More Options': 'Más Opciones','Style' : 'Estilo','OK' : 'Aceptar','Cancel': 'Cancelar'
+		'More Options': 'Más Opciones','Style' : 'Estilo','OK' : 'Aceptar','Cancel': 'Cancelar','Delete Image':'Borrar Imagen',
+		'Confirmation':'Confirmación','Are you sure you want to delete this image?':'¿Está seguro de que desea eliminar esta imagen?','Your photo has been uploaded.':'Su imagen ha sido subida.'
 	}
 
 

@@ -66,7 +66,11 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         'More Options': '',
 		'Style':'',
 		'OK' : '',
-		'Cancel': ''
+		'Cancel': '',
+		'Delete Image':'',
+		'Confirmation':'',
+		'Are you sure you want to delete this image?':'',
+		'Your photo has been uploaded.':''
     },
 	
 	/**
@@ -489,13 +493,13 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
 						// Custom rendering template for each item
 						getInnerTpl: function() {
-							return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><div img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></div>';
+							return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="'+me.t('Delete Image')+'" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
 						},
 						listeners: {
 							el: {
 								click: {
-									delegate: 'div.x-htmleditor-imageupload-delete',
-									fn: function(ev, div) {						
+									delegate: 'a.x-htmleditor-imageupload-delete',
+									fn: function(ev, a) {						
 										Ext.Msg.show(
 										{
 											title: me.t('Confirmation'),
@@ -510,7 +514,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 													{
 														url: me.managerUrl,
 														method: 'POST',
-														params: {'action': 'delete','image':div.getAttribute('img_fullname')},
+														params: {'action': 'delete','image':a.getAttribute('img_fullname')},
 														success: function (fp, o)
 														{
 															var combo = me.down('#src');
@@ -546,7 +550,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                     url: me.submitUrl+'?action=upload',
                                     waitMsg: me.t('Uploading your photo...'),
                                     success: function (fp, o) {
-                                        Ext.Msg.alert('Success', 'Your photo has been uploaded.');
+                                        Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
 										var combo = me.down('#src');
                                         combo.setRawValue(o.result.data['src']);
                                     },
