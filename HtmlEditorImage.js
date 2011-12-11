@@ -492,6 +492,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							{
 								combo.store.load();
 							},
+							select: function()
+							{
+								me.down('form').getForm().reset();
+							},
 							el: {
 								click: {
 									delegate: 'div.x-htmleditor-imageupload-delete',
@@ -903,7 +907,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
             this.down('#fieldOptions').expand();
 
-            this.down('#src').setValue(image.src);
+            this.down('#src').setRawValue(image.src);
             
 			if (image.style) {
                 if (Ext.isIE) {
