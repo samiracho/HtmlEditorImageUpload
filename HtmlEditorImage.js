@@ -492,13 +492,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							{
 								combo.store.load();
 							},
-							select: function()
-							{
-								var combo = me.down('#src');
-								var value = combo.getValue();
-								me.down('form').getForm().reset();
-								combo.setRawValue(value);
-							},
 							el: {
 								click: {
 									delegate: 'div.x-htmleditor-imageupload-delete',
