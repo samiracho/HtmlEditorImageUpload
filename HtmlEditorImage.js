@@ -478,6 +478,11 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 					store: imageStore,
 					displayField: 'src',
 					valueField: 'src',
+					listeners: {
+						expand: function (combo, options){
+							combo.store.load(combo.store.lastOptions);
+						}
+					},
 					listConfig: {
 						loadingText: 'Searching...',
 						emptyText: 'No matching posts found.',
@@ -487,10 +492,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><div img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></div>';
 						},
 						listeners: {
-							afterrender: function (combo, options)
-							{
-								combo.store.load();
-							},
 							el: {
 								click: {
 									delegate: 'div.x-htmleditor-imageupload-delete',
@@ -514,8 +515,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 														{
 															var combo = me.down('#src');
 															combo.setValue('');
-															combo.store.load(combo.store.lastOptions);
-															me.down('form').getForm().reset();													
+															me.down('form').getForm().reset();
 														},
 														failure: function(form, action)
 														{
@@ -549,7 +549,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                         Ext.Msg.alert('Success', 'Your photo has been uploaded.');
 										var combo = me.down('#src');
                                         combo.setRawValue(o.result.data['src']);
-										combo.store.load(combo.store.lastOptions);
                                     },
                                     failure: function (form, action) {
                                         Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
