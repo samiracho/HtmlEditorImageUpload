@@ -327,6 +327,15 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     }
 });
 
+Ext.define('Ext.ux.form.HtmlEditor.ImageModel', {
+	extend: 'Ext.data.Model',
+	fields: [
+		{name: 'name', type: 'string'},
+		{name: 'fullname', type: 'string'},
+		{name: 'src',  type: 'string'}
+	]
+});
+		
 Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     extend: 'Ext.window.Window',
     lang: null,
@@ -365,18 +374,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     },
     initComponent: function () {
         var me = this;
-
-		Ext.define('User', {
-			extend: 'Ext.data.Model',
-			fields: [
-				{name: 'name', type: 'string'},
-				{name: 'fullname', type: 'string'},
-				{name: 'src',  type: 'string'}
-			]
-		});
-
 		var imageStore = Ext.create('Ext.data.Store', {
-			model: 'User',
+			model: 'Ext.ux.form.HtmlEditor.ImageModel',
 			proxy: {
 				type: 'ajax',
 				url : me.managerUrl,
