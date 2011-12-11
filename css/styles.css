@@ -1,1 +1,4 @@
-.x-htmleditor-imageupload {background: url(../img/image_upload.png) 0 0 no-repeat !important;}
+.x-htmleditor-imageupload {background: url(../img/image_upload.png) 0 0 no-repeat !important}
+.x-htmleditor-imageupload-delete{background: url(../img/trash.gif) 0 0 no-repeat !important;width:16px;height:16px;margin:20px 10px;}
+.x-htmleditor-imageupload-name{float:right;padding:20px 10px 0 0;}
+.x-htmleditor-imageupload-thumb{width:56px;height:56px;float:right}

@@ -77,6 +77,20 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     submitUrl: 'htmlEditorImageUpload.php',
 	
 	/**
+   * @cfg {String} mamangerUrl
+   * Path to the image manager script.
+   * Default 'htmlEditorImageManager.php'
+   */
+    managerUrl: 'htmlEditorImageUpload.php',
+	
+	/**
+   * @cfg {integer} pageSize
+   * Number of images to show on the list.
+   * Default 4
+   */
+    pageSize: 4,
+	
+	/**
    * @cfg {Boolean} values are:
    * 
    * 
@@ -267,8 +281,10 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             lang: this.lang,
             t: this.t,
             submitUrl: this.submitUrl,
+			managerUrl: this.managerUrl,
             iframeDoc: doc,
-            imageToEdit: image
+            imageToEdit: image,
+			pageSize: this.pageSize
         });
 
         this.uploadDialog.on('imageloaded', function () {
@@ -283,8 +299,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                             imgs[i].parentNode.replaceChild(newImage, imgs[i]);
                         } else if (ieBrowser) {
                             imgs[i].outerHTML = newImage.outerHTML;
-                        }
-                        imgs[i].removeAttribute('html_imgediting');
+
+                        }          
                         break;
                     }
                 }
@@ -299,6 +315,9 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                     range.pasteHTML(newImage.outerHTML);
                 }
             }
+			
+			//cmp.insertAtCursor(newImage.outerHTML);
+			
             this.imageToEdit = "";
             this.close();
         });
@@ -314,7 +333,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     lang: null,
     t: null,
     submitUrl: null,
+	managerUrl:null,
     iframeDoc: null,
+	pageSize:4,
     imageToEdit: '',
     closeAction: 'destroy',
     width: 460,
@@ -345,8 +366,32 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     initComponent: function () {
         var me = this;
 
-        me.addEvents('imageloaded');
+		Ext.define('User', {
+			extend: 'Ext.data.Model',
+			fields: [
+				{name: 'name', type: 'string'},
+				{name: 'fullname', type: 'string'},
+				{name: 'src',  type: 'string'}
+			]
+		});
 
+		var imageStore = Ext.create('Ext.data.Store', {
+			model: 'User',
+			proxy: {
+				type: 'ajax',
+				url : me.managerUrl,
+				extraParams: {
+                    action: 'imagesList'
+                },
+				reader: {
+					type: 'json',
+					root: 'data'
+				}
+			},
+			autoLoad: false,
+			pageSize:me.pageSize
+		});
+		
         var alignStore = Ext.create('Ext.data.ArrayStore', {
             autoDestroy: true,
             idIndex: 0,
@@ -418,32 +463,93 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     type: 'column'
                 },
                 fieldLabel: '',
-                items: [{
-                    xtype: 'textfield',
-                    itemId: 'src',
-                    labelWidth: 90,
-                    width: 310,
-                    margin: '0 8 0 0',
-                    fieldLabel: 'Url',
-                    height: 22
-                }, {
+                items: [
+				{
+					xtype: 'combobox',
+					itemId: 'src',
+					queryMode: 'local',
+					fieldLabel: 'Url',
+					labelWidth:50,
+					width: 326,
+					margin: '0 4 0 0',
+					editable: true,
+					allowBlank: true,
+					emptyText: '',
+					value: '',
+					store: imageStore,
+					displayField: 'src',
+					valueField: 'src',
+					listConfig: {
+						loadingText: 'Searching...',
+						emptyText: 'No matching posts found.',
+
+						// Custom rendering template for each item
+						getInnerTpl: function() {
+							return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><div img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></div>';
+						},
+						listeners: {
+							afterrender: function (combo, options)
+							{
+								combo.store.load();
+							},
+							el: {
+								click: {
+									delegate: 'div.x-htmleditor-imageupload-delete',
+									fn: function(ev, div) {						
+										Ext.Msg.show(
+										{
+											title: me.t('Confirmation'),
+											msg: me.t('Are you sure you want to delete this image?'),
+											buttons: Ext.Msg.YESNO,
+											closable: false,
+											fn: function (btn)
+											{
+												if (btn == 'yes')
+												{
+													Ext.Ajax.request(
+													{
+														url: me.managerUrl,
+														method: 'POST',
+														params: {'action': 'delete','image':div.getAttribute('img_fullname')},
+														success: function (fp, o)
+														{
+															var combo = me.down('#src');
+															combo.setValue('');
+															combo.store.load(combo.store.lastOptions);
+															me.down('form').getForm().reset();													
+														},
+														failure: function(form, action)
+														{
+															Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
+														}
+													});
+												}
+											}
+										});
+									}
+								}
+							}
+						}
+					},
+					pageSize: me.pageSize
+				},{
                     xtype: 'filefield',
                     buttonOnly: true,
                     itemId: 'photo-path',
                     name: 'photo-path',
                     value: '',
                     buttonText: me.t('Upload Image...'),
-                    anchor: '100%',
                     listeners: {
                         change: function () {
                             var form = this.up('form').getForm();
                             if (form.isValid()) {
                                 form.submit({
-                                    url: me.submitUrl,
+                                    url: me.submitUrl+'?action=upload',
                                     waitMsg: me.t('Uploading your photo...'),
                                     success: function (fp, o) {
                                         Ext.Msg.alert('Success', 'Your photo has been uploaded.');
-                                        me.down('#src').setValue(o.result.data['url']);
+                                        me.down('#src').setRawValue(o.result.data['url']);
+										console.log( me.down('#src'));
                                     },
                                     failure: function (form, action) {
                                         Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
@@ -797,15 +903,16 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             this.down('#fieldOptions').expand();
 
             this.down('#src').setValue(image.src);
-            if (image.style) {
+            
+			if (image.style) {
                 if (Ext.isIE) {
                     this.down('#float').setValue(image.style.styleFloat ? image.style.styleFloat : 'none');
                 } else {
                     this.down('#float').setValue(image.style.cssFloat ? image.style.cssFloat : 'none');
                 }
                 this.down('#display').setValue(image.style.display ? image.style.display : '');
-                this.down('#width').setValue(image.style.width ? image.style.width.replace(/[^\d.]/g, "") : '');
-                this.down('#height').setValue(image.style.height ? image.style.height.replace(/[^\d.]/g, "") : '');
+                this.down('#width').setValue(image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width);
+                this.down('#height').setValue(image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height);
                 this.down('#widthUnits').setValue(image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px');
                 this.down('#heightUnits').setValue(image.style.height ? image.style.height.replace(/[\d.]/g, "") : 'px');
                 this.down('#paddingTop').setValue(image.style.paddingTop ? image.style.paddingTop.replace(/[^\d.]/g, "") : '');
