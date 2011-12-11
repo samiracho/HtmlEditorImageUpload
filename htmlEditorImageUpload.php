@@ -86,7 +86,7 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl)
 		$result= array(
             'success'	=> true,
             'message'	=> 'Image Uploaded Successfully',
-            'data'		=> array('url'=>$imagesUrl.$nombreArchivo),
+            'data'		=> array('src'=>$imagesUrl.$nombreArchivo),
 			'total'		=> '1',
 			'errors'	=> ''
         );

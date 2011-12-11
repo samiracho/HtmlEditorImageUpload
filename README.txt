@@ -51,11 +51,19 @@ submitUrl:
 	The script must return a json response with this format:
 
 	If file upload is successfull
-	{"success":true,"message":"Image Uploaded Successfully","data":{"url":"http:\/\/yoursite.com\/imageuploadPlugin\/uploads\/ajpg.png"},"total":"1","errors":""}
+	{"success":true,"message":"Image Uploaded Successfully","data":{"src":"http:\/\/yoursite.com\/imageuploadPlugin\/uploads\/ajpg.png"},"total":"1","errors":""}
 
 	Upload failure example
 	{"success":false,"message":"Error","data":"","total":"0","errors":"The file you attempted to upload is too large."}
 
+managerUrl:
+	Url to get the images folder list and delete them.
+	The images list will be a json string with the following format
+	{"success":true,"message":"Success","data":[{"fullname":"images (1).jpg","name":"images (1).jpg...","src":"http:\/\/www.asociacionhispanosiriacv.com\/imageuploadPlugin2\/uploads\/images (1).jpg"},{"fullname":"Sunset.jpg","name":"Sunset.jpg..."
+
+pageSize:
+	Number of results to show on image list
+	
 dragResize:
 	By default is true, it allows image drag resize on WebKit browsers
 

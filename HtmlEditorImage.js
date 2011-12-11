@@ -548,8 +548,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                     waitMsg: me.t('Uploading your photo...'),
                                     success: function (fp, o) {
                                         Ext.Msg.alert('Success', 'Your photo has been uploaded.');
-                                        me.down('#src').setRawValue(o.result.data['url']);
-										console.log( me.down('#src'));
+										var combo = me.down('#src');
+                                        combo.setRawValue(o.result.data['src']);
+										combo.store.load(combo.store.lastOptions);
                                     },
                                     failure: function (form, action) {
                                         Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
