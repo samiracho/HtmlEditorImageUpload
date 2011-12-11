@@ -240,7 +240,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     },
     _subirImagen: function () {
 
-        var cmp = this.cmp;
+        var me = this;
+		var cmp = this.cmp;
         var doc = this.cmp.getDoc();
         var win = this.cmp.win;
         var sel = "";
@@ -281,17 +282,17 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             }
         }
 
-        this.uploadDialog = Ext.create('Ext.ux.form.HtmlEditor.ImageDialog', {
-            lang: this.lang,
-            t: this.t,
-            submitUrl: this.submitUrl,
-			managerUrl: this.managerUrl,
+        me.uploadDialog = Ext.create('Ext.ux.form.HtmlEditor.ImageDialog', {
+            lang: me.lang,
+            t: me.t,
+            submitUrl: me.submitUrl,
+			managerUrl: me.managerUrl,
             iframeDoc: doc,
             imageToEdit: image,
-			pageSize: this.pageSize
+			pageSize: me.pageSize
         });
 
-        this.uploadDialog.on('imageloaded', function () {
+        me.uploadDialog.on('imageloaded', function () {
             var newImage = this.getImage();
 
             // if it's an edited image, we have to replace it with the new values
@@ -320,24 +321,13 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                 }
             }
 			
-			//cmp.insertAtCursor(newImage.outerHTML);
-			
-            this.imageToEdit = "";
+            me.imageToEdit = "";
             this.close();
         });
 
-        this.uploadDialog.loadImageDetails();
-        this.uploadDialog.show();
+        me.uploadDialog.loadImageDetails();
+        me.uploadDialog.show();
     }
-});
-
-Ext.define('Ext.ux.form.HtmlEditor.ImageModel', {
-	extend: 'Ext.data.Model',
-	fields: [
-		{name: 'name', type: 'string'},
-		{name: 'fullname', type: 'string'},
-		{name: 'src',  type: 'string'}
-	]
 });
 		
 Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
@@ -379,7 +369,11 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     initComponent: function () {
         var me = this;
 		var imageStore = Ext.create('Ext.data.Store', {
-			model: 'Ext.ux.form.HtmlEditor.ImageModel',
+			fields: [
+				{name: 'name', type: 'string'},
+				{name: 'fullname', type: 'string'},
+				{name: 'src',  type: 'string'}
+			],
 			proxy: {
 				type: 'ajax',
 				url : me.managerUrl,
