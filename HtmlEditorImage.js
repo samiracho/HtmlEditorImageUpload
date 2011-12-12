@@ -14,9 +14,7 @@
  * 
  * License details: http://www.gnu.org/licenses/lgpl.html
  */
- 
- 
- /**
+/**
  * @class Ext.ux.form.HtmlEditor.imageUpload
  *
  * Creates new HtmlEditor.imageUpload plugin
@@ -36,11 +34,11 @@
  */
 Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
-	/**
-   * @cfg {Array} options
-   * Associative array with all the strings.
-   * If not specified it will show all the strings in english
-   */
+    /**
+     * @cfg {Array} options
+     * Associative array with all the strings.
+     * If not specified it will show all the strings in english
+     */
     lang: {
         'Display': '',
         'By Default': '',
@@ -64,37 +62,37 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         'None': '',
         'Size & Details': '',
         'More Options': '',
-		'Style':'',
-		'OK' : '',
-		'Cancel': '',
-		'Delete Image':'',
-		'Confirmation':'',
-		'Are you sure you want to delete this image?':'',
-		'Your photo has been uploaded.':''
+        'Style': '',
+        'OK': '',
+        'Cancel': '',
+        'Delete Image': '',
+        'Confirmation': '',
+        'Are you sure you want to delete this image?': '',
+        'Your photo has been uploaded.': ''
     },
-	
-	/**
-   * @cfg {String} submitUrl
-   * Path to the upload script.
-   * Default 'htmlEditorImageUpload.php'
-   */
+
+    /**
+     * @cfg {String} submitUrl
+     * Path to the upload script.
+     * Default 'htmlEditorImageUpload.php'
+     */
     submitUrl: 'htmlEditorImageUpload.php',
-	
-	/**
-   * @cfg {String} mamangerUrl
-   * Path to the image manager script.
-   * Default 'htmlEditorImageManager.php'
-   */
+
+    /**
+     * @cfg {String} mamangerUrl
+     * Path to the image manager script.
+     * Default 'htmlEditorImageManager.php'
+     */
     managerUrl: 'htmlEditorImageUpload.php',
-	
-	/**
-   * @cfg {integer} pageSize
-   * Number of images to show on the list.
-   * Default 4
-   */
+
+    /**
+     * @cfg {integer} pageSize
+     * Number of images to show on the list.
+     * Default 4
+     */
     pageSize: 4,
-	
-	/**
+
+/**
    * @cfg {Boolean} values are:
    * 
    * 
@@ -109,8 +107,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
    * 
    */
     dragResize: true,
-	
-	/**
+
+/**
    * @cfg {Boolean} values are:
    * 
    * 
@@ -124,15 +122,15 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
    * 
    * 
    */
-	wheelResize:true,
-	
-	/**
-   * @cfg {String} iframeCss
-   * Path to the iframe css file. 
-   * It's important to do not merge this css with other CSS files, because it will be applied to the htmleditor 
-   * iframe head. If more css rules are included, it can suffer undesired effects
-   * Default 'css/iframe_styles.css'
-   */
+    wheelResize: true,
+
+    /**
+     * @cfg {String} iframeCss
+     * Path to the iframe css file. 
+     * It's important to do not merge this css with other CSS files, because it will be applied to the htmleditor 
+     * iframe head. If more css rules are included, it can suffer undesired effects
+     * Default 'css/iframe_styles.css'
+     */
     iframeCss: 'css/iframe_styles.css',
     t: function t(string) {
         return this.lang[string] ? this.lang[string] : string;
@@ -146,58 +144,10 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         this.cmp.on('render', this.onRender, this);
         this.cmp.on('initialize', this.initialize, this);
     },
-    // function to allow image resizing on webkit browsers (safari / chrome)
-    // it will be called from the htmleditor iframe
-    _webKitResize: function (evt, document, window) {
+    initialize: function () {
 
         var me = this;
-		var imgs = document.body.getElementsByTagName("IMG");
-
-        var mouseWheelResize = function (e) {
-                var event = window.event || e;
-
-                if (this.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
-                    var delta = event.detail ? event.detail * (-120) : event.wheelDelta
-                    this.style.width = (delta <= -120) ? this.width - 10 : this.width + 10;
-                    this.style.height = (delta <= -120) ? this.height - 10 : this.height + 10;
-                    if (event.preventDefault) event.preventDefault();
-                    else return false
-                } else return;
-            };
-
-        var mouseDragResize = function (event) {
-                var width = event.pageX - this.offsetLeft;
-                var height = event.pageY - this.offsetTop;
-                this.style.width = width + "px";
-                this.style.height = height + "px";
-
-                if (event.preventDefault) event.preventDefault();
-                else return false
-            };
-
-        for (i = 0; i < imgs.length; i++) {
-            imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-            if (imgs[i].className == "") imgs[i].removeAttribute("class");
-            if (Ext.isWebKit && me.dragResize) imgs[i].removeEventListener('drag', mouseDragResize, false);
-            if(me.wheelResize)imgs[i].removeEventListener('mousewheel', mouseWheelResize, false);
-        }
-
-        if (evt.srcElement.tagName == "IMG") {
-            evt.srcElement.className = evt.srcElement.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-            if(me.wheelResize || me.dragResize)evt.srcElement.className += " x-htmleditor-imageupload-bordeResize";
-			else evt.srcElement.className += " x-htmleditor-imageupload-bordeSelect";
-			
-            if (Ext.isWebKit && me.dragResize) evt.srcElement.addEventListener('drag', mouseDragResize, false);
-            if(me.wheelResize)evt.srcElement.addEventListener('mousewheel', mouseWheelResize, false);
-
-            // select image. On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
-            if (Ext.isWebKit) {
-                var sel = window.getSelection ? window.getSelection() : window.document.selection;
-                sel.setBaseAndExtent(evt.srcElement, 0, evt.srcElement, 1);
-            }
-        }
-    },
-    initialize: function () {
+        var cmpDoc = this.cmp.getDoc();
 
         // Weird. In gecko browsers, if the user clicks directly on a photo, it loses the focus the first time.
         // focusing on the editor we avoid this problem
@@ -212,7 +162,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             if (document.frames) iframe = document.frames[frameName];
             else iframe = window.frames[frameName];
 
-            // we have to add our custom css file to the iframe
+            // we have to inject our custom css file to the iframe's head
             var ss = iframe.document.createElement("link");
             ss.type = "text/css";
             ss.rel = "stylesheet";
@@ -221,27 +171,58 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             if (document.all) iframe.document.createStyleSheet(ss.href);
             else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
 
-            // to add resize listener on iframes document
+            // Add listeners to the iframe document
             iframe = document.getElementById(me.cmp.iframeEl.dom.id);
-            iframe.contentWindow.document.body.addEventListener('click', function (evt) {
-                me._webKitResize(evt, iframe.contentWindow.document, iframe.contentWindow)
-            }, false);
+
+            Ext.fly(cmpDoc).on({
+                click: function (evt) {
+                    me._docClick(evt, iframe)
+                },
+                scope: me
+            });
+
+            if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
+                Ext.fly(cmpDoc.body).on({
+                    mousewheel: function (evt) {
+                        me._docWheel(evt)
+                    },
+                    scope: me
+                })
+            }
+
+            if (Ext.isWebKit && me.dragResize) {
+                Ext.fly(cmpDoc.body).on({
+                    drag: function (evt) {
+                        me._docDrag(evt)
+                    },
+                    scope: me
+                })
+            }
         }
     },
     onRender: function () {
-        this.cmp.getToolbar().add([{
+
+        var uploadButton = Ext.create('Ext.button.Button', {
             iconCls: 'x-htmleditor-imageupload',
-            handler: this._subirImagen,
+            handler: this._uploadImage,
             scope: this,
             tooltip: this.t('Insert/Edit Image'),
             overflowText: this.t('Insert/Edit Image')
-        }]);
+        });
+
+        var toolbar = this.cmp.getToolbar();
+
+        // we save a reference to this button to use it later
+        this.uploadButton = uploadButton;
+
+        this.cmp.getToolbar().add(uploadButton);
 
     },
-    _subirImagen: function () {
+    //private
+    _uploadImage: function () {
 
         var me = this;
-		var cmp = this.cmp;
+        var cmp = this.cmp;
         var doc = this.cmp.getDoc();
         var win = this.cmp.win;
         var sel = "";
@@ -286,10 +267,10 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             lang: me.lang,
             t: me.t,
             submitUrl: me.submitUrl,
-			managerUrl: me.managerUrl,
+            managerUrl: me.managerUrl,
             iframeDoc: doc,
             imageToEdit: image,
-			pageSize: me.pageSize
+            pageSize: me.pageSize
         });
 
         me.uploadDialog.on('imageloaded', function () {
@@ -305,7 +286,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                         } else if (ieBrowser) {
                             imgs[i].outerHTML = newImage.outerHTML;
 
-                        }          
+                        }
                         break;
                     }
                 }
@@ -320,25 +301,101 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                     range.pasteHTML(newImage.outerHTML);
                 }
             }
-			
+
             me.imageToEdit = "";
             this.close();
         });
 
         me.uploadDialog.loadImageDetails();
         me.uploadDialog.show();
+    },
+    //private	
+    _removeSelectionHelpers: function () {
+        var imgs = this.cmp.getDoc().body.getElementsByTagName("IMG");
+
+        if (Ext.isWebKit || Ext.isOpera) {
+            for (i = 0; i < imgs.length; i++) {
+                imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
+                if (imgs[i].className == "") imgs[i].removeAttribute("class");
+            }
+        }
+    },
+    //private
+    // adds a border surrounding the image on webkit browsers
+    _docClick: function (evt) {
+
+        var me = this;
+        var target = evt.getTarget();
+
+        me._removeSelectionHelpers();
+
+        if (target.tagName == "IMG") {
+
+            if (Ext.isWebKit || Ext.isOpera) {
+                target.className = target.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
+                if (me.wheelResize || me.dragResize) target.className += " x-htmleditor-imageupload-bordeResize";
+                else target.className += " x-htmleditor-imageupload-bordeSelect";
+            }
+
+            //toggle on image button
+            // webkit browsers return true to some querycommand state when one image is selected. Thats why bold, italic and underline buttons are highlighted
+            // bug http://code.google.com/p/chromium/issues/detail?id=31316
+            me.uploadButton.toggle(true);
+
+            // select image on click. 
+            // On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
+            if (Ext.isWebKit) {
+                var sel = me.cmp.getWin().getSelection ? me.cmp.getWin().getSelection() : me.cmp.getDoc().selection;
+                sel.setBaseAndExtent(target, 0, target, 1);
+            }
+        } else me.uploadButton.toggle(false);
+    },
+    //private
+    // allows mousewheel resizing
+    _docWheel: function (evt) {
+
+        var target = evt.getTarget();
+
+        if (target.tagName == "IMG") {
+            if (target.className.search("x-htmleditor-imageupload-bordeResize") > 0) {
+                var delta = evt.getWheelDelta();
+                target.style.width = (delta < 1) ? target.width - 10 : target.width + 10;
+                target.style.height = (delta < 1) ? target.height - 10 : target.height + 10;
+                evt.preventDefault();
+            }
+        }
+    },
+    //private
+    // allows drag resizing
+    _docDrag: function (evt) {
+
+        if (!evt.getTarget) return;
+        var target = evt.getTarget();
+
+        if (target.tagName == "IMG") {
+
+            if (Ext.isWebKit) {
+                var width = evt.getPageX() - target.offsetLeft;
+                var height = evt.getPageY() - target.offsetTop;
+                target.style.width = width + "px";
+                target.style.height = height + "px";
+
+                if (evt.preventDefault) evt.preventDefault();
+                else return false
+            }
+        }
     }
 });
-		
+
 Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     extend: 'Ext.window.Window',
     lang: null,
     lang: null,
     t: null,
     submitUrl: null,
-	managerUrl:null,
+    managerUrl: null,
     iframeDoc: null,
-	pageSize:4,
+    pageSize: 4,
     imageToEdit: '',
     closeAction: 'destroy',
     width: 460,
@@ -351,7 +408,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     listeners: {
         show: function (panel) {
             // we force the focus on the dialog window to avoid control artifacts on IE
-            panel.down('#src').focus();
+            panel.down('[name=src]').focus();
         },
         close: function (panel) {
             // if we were editing a image we have to delete the custom attr
@@ -368,27 +425,32 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     },
     initComponent: function () {
         var me = this;
-		var imageStore = Ext.create('Ext.data.Store', {
-			fields: [
-				{name: 'name', type: 'string'},
-				{name: 'fullname', type: 'string'},
-				{name: 'src',  type: 'string'}
-			],
-			proxy: {
-				type: 'ajax',
-				url : me.managerUrl,
-				extraParams: {
+        var imageStore = Ext.create('Ext.data.Store', {
+            fields: [{
+                name: 'name',
+                type: 'string'
+            }, {
+                name: 'fullname',
+                type: 'string'
+            }, {
+                name: 'src',
+                type: 'string'
+            }],
+            proxy: {
+                type: 'ajax',
+                url: me.managerUrl,
+                extraParams: {
                     action: 'imagesList'
                 },
-				reader: {
-					type: 'json',
-					root: 'data'
-				}
-			},
-			autoLoad: false,
-			pageSize:me.pageSize
-		});
-		
+                reader: {
+                    type: 'json',
+                    root: 'data'
+                }
+            },
+            autoLoad: false,
+            pageSize: me.pageSize
+        });
+
         var alignStore = Ext.create('Ext.data.ArrayStore', {
             autoDestroy: true,
             idIndex: 0,
@@ -448,7 +510,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
         me.items = [{
             xtype: 'form',
-            itemId: 'imageUploadForm',
+            name: 'imageUploadForm',
             bodyPadding: 10,
             items: [{
                 xtype: 'fieldcontainer',
@@ -460,92 +522,89 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     type: 'column'
                 },
                 fieldLabel: '',
-                items: [
-				{
-					xtype: 'combobox',
-					itemId: 'src',
-					queryMode: 'local',
-					fieldLabel: 'Url',
-					labelWidth:50,
-					width: 326,
-					margin: '0 4 0 0',
-					editable: true,
-					allowBlank: true,
-					emptyText: '',
-					value: '',
-					store: imageStore,
-					displayField: 'src',
-					valueField: 'src',
-					listeners: {
-						expand: function (combo, options){
-							combo.store.load(combo.store.lastOptions);
-						}
-					},
-					listConfig: {
-						loadingText: 'Searching...',
-						emptyText: 'No matching posts found.',
+                items: [{
+                    xtype: 'combobox',
+                    name: 'src',
+                    queryMode: 'local',
+                    fieldLabel: 'Url',
+                    labelWidth: 50,
+                    columnWidth: 0.70,
+                    margin: '0 4 0 0',
+                    editable: true,
+                    allowBlank: true,
+                    emptyText: '',
+                    value: '',
+                    store: imageStore,
+                    displayField: 'src',
+                    valueField: 'src',
+                    listeners: {
+                        expand: function (combo, options) {
+                            combo.store.load(combo.store.lastOptions);
+                        }
+                    },
+                    listConfig: {
+                        loadingText: 'Searching...',
+                        emptyText: 'No matching posts found.',
 
-						// Custom rendering template for each item
-						getInnerTpl: function() {
-							return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="'+me.t('Delete Image')+'" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
-						},
-						listeners: {
-							el: {
-								click: {
-									delegate: 'a.x-htmleditor-imageupload-delete',
-									fn: function(ev, a) {						
-										Ext.Msg.show(
-										{
-											title: me.t('Confirmation'),
-											msg: me.t('Are you sure you want to delete this image?'),
-											buttons: Ext.Msg.YESNO,
-											closable: false,
-											fn: function (btn)
-											{
-												if (btn == 'yes')
-												{
-													Ext.Ajax.request(
-													{
-														url: me.managerUrl,
-														method: 'POST',
-														params: {'action': 'delete','image':a.getAttribute('img_fullname')},
-														success: function (fp, o)
-														{
-															var combo = me.down('#src');
-															combo.setValue('');
-															me.down('form').getForm().reset();
-														},
-														failure: function(form, action)
-														{
-															Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
-														}
-													});
-												}
-											}
-										});
-									}
-								}
-							}
-						}
-					},
-					pageSize: me.pageSize
-				},{
+                        // Custom rendering template for each item
+                        getInnerTpl: function () {
+                            return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
+                        },
+                        listeners: {
+                            el: {
+                                click: {
+                                    delegate: 'a.x-htmleditor-imageupload-delete',
+                                    fn: function (ev, a) {
+                                        Ext.Msg.show({
+                                            title: me.t('Confirmation'),
+                                            msg: me.t('Are you sure you want to delete this image?'),
+                                            buttons: Ext.Msg.YESNO,
+                                            closable: false,
+                                            fn: function (btn) {
+                                                if (btn == 'yes') {
+                                                    Ext.Ajax.request({
+                                                        url: me.managerUrl,
+                                                        method: 'POST',
+                                                        params: {
+                                                            'action': 'delete',
+                                                            'image': a.getAttribute('img_fullname')
+                                                        },
+                                                        success: function (fp, o) {
+                                                            var combo = me.down('#src');
+                                                            combo.setValue('');
+                                                            me.down('form').getForm().reset();
+                                                        },
+                                                        failure: function (form, action) {
+                                                            Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
+                                                        }
+                                                    });
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    pageSize: me.pageSize
+                }, {
                     xtype: 'filefield',
                     buttonOnly: true,
-                    itemId: 'photo-path',
+                    name: 'photo-path',
                     name: 'photo-path',
                     value: '',
+                    columnWidth: 0.30,
                     buttonText: me.t('Upload Image...'),
                     listeners: {
                         change: function () {
                             var form = this.up('form').getForm();
                             if (form.isValid()) {
                                 form.submit({
-                                    url: me.submitUrl+'?action=upload',
+                                    url: me.submitUrl + '?action=upload',
                                     waitMsg: me.t('Uploading your photo...'),
                                     success: function (fp, o) {
                                         Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
-										var combo = me.down('#src');
+                                        var combo = me.down('#src');
                                         combo.setRawValue(o.result.data['src']);
                                     },
                                     failure: function (form, action) {
@@ -598,10 +657,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         items: [{
                             xtype: 'numberfield',
                             fieldLabel: me.t('Width'),
-                            itemId: 'width'
+                            name: 'width'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'widthUnits',
+                            name: 'widthUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -615,10 +674,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Height'),
-                            itemId: 'height'
+                            name: 'height'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'heightUnits',
+                            name: 'heightUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -632,7 +691,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }]
                     }, {
                         xtype: 'combobox',
-                        itemId: 'float',
+                        name: 'float',
                         queryMode: 'local',
                         editable: false,
                         allowBlank: false,
@@ -650,7 +709,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     collapsed: true,
                     items: [{
                         xtype: 'combobox',
-                        itemId: 'display',
+                        name: 'display',
                         queryMode: 'local',
                         editable: false,
                         anchor: '100%',
@@ -664,13 +723,13 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         valueField: 'value'
                     }, {
                         xtype: 'textfield',
-                        itemId: 'title',
+                        name: 'title',
                         labelWidth: 72,
                         anchor: '100%',
                         fieldLabel: me.t('Title')
                     }, {
                         xtype: 'textfield',
-                        itemId: 'className',
+                        name: 'className',
                         labelWidth: 72,
                         anchor: '100%',
                         fieldLabel: me.t('Class')
@@ -695,10 +754,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         items: [{
                             xtype: 'numberfield',
                             fieldLabel: me.t('Top'),
-                            itemId: 'paddingTop'
+                            name: 'paddingTop'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'paddingTopUnits',
+                            name: 'paddingTopUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -712,10 +771,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Right'),
-                            itemId: 'paddingRight'
+                            name: 'paddingRight'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'paddingRightUnits',
+                            name: 'paddingRightUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -729,10 +788,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Bottom'),
-                            itemId: 'paddingBottom'
+                            name: 'paddingBottom'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'paddingBottomUnits',
+                            name: 'paddingBottomUnits',
                             fieldLabel: '',
                             queryMode: 'local',
                             editable: false,
@@ -746,10 +805,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Left'),
-                            itemId: 'paddingLeft'
+                            name: 'paddingLeft'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'paddingLeftUnits',
+                            name: 'paddingLeftUnits',
                             fieldLabel: '',
                             queryMode: 'local',
                             editable: false,
@@ -782,10 +841,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         items: [{
                             xtype: 'numberfield',
                             fieldLabel: me.t('Top'),
-                            itemId: 'marginTop'
+                            name: 'marginTop'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'marginTopUnits',
+                            name: 'marginTopUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -799,10 +858,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Right'),
-                            itemId: 'marginRight'
+                            name: 'marginRight'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'marginRightUnits',
+                            name: 'marginRightUnits',
                             queryMode: 'local',
                             fieldLabel: '',
                             width: 48,
@@ -816,10 +875,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Bottom'),
-                            itemId: 'marginBottom'
+                            name: 'marginBottom'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'marginBottomUnits',
+                            name: 'marginBottomUnits',
                             fieldLabel: '',
                             queryMode: 'local',
                             editable: false,
@@ -833,10 +892,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Left'),
-                            itemId: 'marginLeft'
+                            name: 'marginLeft'
                         }, {
                             xtype: 'combobox',
-                            itemId: 'marginLeftUnits',
+                            name: 'marginLeftUnits',
                             fieldLabel: '',
                             queryMode: 'local',
                             editable: false,
@@ -863,7 +922,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     style: {
                         'float': 'right'
                     },
-                    text: 'Cancelar',
+                    text: me.t('Cancel'),
                     handler: me.close,
                     scope: me
                 }, {
@@ -872,7 +931,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         'float': 'right',
                         'margin-right': '8px'
                     },
-                    text: 'Aceptar',
+                    text: me.t('OK'),
                     formBind: true,
                     handler: function () {
                         me.fireEvent('imageloaded');
@@ -897,80 +956,71 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         //if user has an image selected get the image attrs
         if (image != "") {
 
-            this.down('#fieldOptions').expand();
-
-            this.down('#src').setRawValue(image.src);
-            
-			if (image.style) {
-                if (Ext.isIE) {
-                    this.down('#float').setValue(image.style.styleFloat ? image.style.styleFloat : 'none');
-                } else {
-                    this.down('#float').setValue(image.style.cssFloat ? image.style.cssFloat : 'none');
-                }
-                this.down('#display').setValue(image.style.display ? image.style.display : '');
-                this.down('#width').setValue(image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width);
-                this.down('#height').setValue(image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height);
-                this.down('#widthUnits').setValue(image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px');
-                this.down('#heightUnits').setValue(image.style.height ? image.style.height.replace(/[\d.]/g, "") : 'px');
-                this.down('#paddingTop').setValue(image.style.paddingTop ? image.style.paddingTop.replace(/[^\d.]/g, "") : '');
-                this.down('#paddingTopUnits').setValue(image.style.paddingTop ? image.style.paddingTop.replace(/[\d.]/g, "") : 'px');
-                this.down('#paddingLeft').setValue(image.style.paddingLeft ? image.style.paddingLeft.replace(/[^\d.]/g, "") : '');
-                this.down('#paddingLeftUnits').setValue(image.style.paddingLeft ? image.style.paddingLeft.replace(/[\d.]/g, "") : 'px');
-                this.down('#paddingBottom').setValue(image.style.paddingBottom ? image.style.paddingBottom.replace(/[^\d.]/g, "") : '');
-                this.down('#paddingBottomUnits').setValue(image.style.paddingBottom ? image.style.paddingBottom.replace(/[\d.]/g, "") : 'px');
-                this.down('#paddingRight').setValue(image.style.paddingRight ? image.style.paddingRight.replace(/[^\d.]/g, "") : '');
-                this.down('#paddingRightUnits').setValue(image.style.paddingRight ? image.style.paddingRight.replace(/[\d.]/g, "") : 'px');
-                this.down('#marginTop').setValue(image.style.marginTop ? image.style.marginTop.replace(/[^\d.]/g, "") : '');
-                this.down('#marginTopUnits').setValue(image.style.marginTop ? image.style.marginTop.replace(/[\d.]/g, "") : 'px');
-                this.down('#marginLeft').setValue(image.style.marginLeft ? image.style.marginLeft.replace(/[^\d.]/g, "") : '');
-                this.down('#marginLeftUnits').setValue(image.style.marginLeft ? image.style.marginLeft.replace(/[\d.]/g, "") : 'px');
-                this.down('#marginBottom').setValue(image.style.marginBottom ? image.style.marginBottom.replace(/[^\d.]/g, "") : '');
-                this.down('#marginBottomUnits').setValue(image.style.marginBottom ? image.style.marginBottom.replace(/[\d.]/g, "") : 'px');
-                this.down('#marginRight').setValue(image.style.marginRight ? image.style.marginRight.replace(/[^\d.]/g, "") : '');
-                this.down('#marginRightUnits').setValue(image.style.marginRight ? image.style.marginRight.replace(/[\d.]/g, "") : 'px');
+			var cssFloat = "";
+            if (Ext.isIE) {
+                cssFloat = image.style.styleFloat ? image.style.styleFloat : 'none';
+            } else {
+                cssFloat = image.style.cssFloat ? image.style.cssFloat : 'none';
             }
-            this.down('#title').setValue(image.title);
-            this.down('#className').setValue(image.className.replace("x-htmleditor-imageupload-bordeResize", "").replace("x-htmleditor-imageupload-bordeSelect", ""));
+		
+            var values = {
+				'display':            image.style.display ? image.style.display : '',
+				'width':              image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width,
+				'height':             image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height,
+				'widthUnits':         image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
+				'display':            image.style.display ? image.style.display : '',
+                'widthUnits':         image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
+                'heightUnits':        image.style.height ? image.style.height.replace(/[\d.]/g, "") : 'px',
+                'paddingTop':         image.style.paddingTop ? image.style.paddingTop.replace(/[^\d.]/g, "") : '',
+                'paddingTopUnits':    image.style.paddingTop ? image.style.paddingTop.replace(/[\d.]/g, "") : 'px',
+                'paddingLeft':        image.style.paddingLeft ? image.style.paddingLeft.replace(/[^\d.]/g, "") : '',
+                'paddingLeftUnits':   image.style.paddingLeft ? image.style.paddingLeft.replace(/[\d.]/g, "") : 'px',
+                'paddingBottom':      image.style.paddingBottom ? image.style.paddingBottom.replace(/[^\d.]/g, "") : '',
+                'paddingBottomUnits': image.style.paddingBottom ? image.style.paddingBottom.replace(/[\d.]/g, "") : 'px',
+                'paddingRight':       image.style.paddingRight ? image.style.paddingRight.replace(/[^\d.]/g, "") : '',
+                'paddingRightUnits':  image.style.paddingRight ? image.style.paddingRight.replace(/[\d.]/g, "") : 'px',
+                'marginTop':          image.style.marginTop ? image.style.marginTop.replace(/[^\d.]/g, "") : '',
+                'marginTopUnits':     image.style.marginTop ? image.style.marginTop.replace(/[\d.]/g, "") : 'px',
+                'marginLeft':         image.style.marginLeft ? image.style.marginLeft.replace(/[^\d.]/g, "") : '',
+                'marginLeftUnits':    image.style.marginLeft ? image.style.marginLeft.replace(/[\d.]/g, "") : 'px',
+                'marginBottom':       image.style.marginBottom ? image.style.marginBottom.replace(/[^\d.]/g, "") : '',
+                'marginBottomUnits':  image.style.marginBottom ? image.style.marginBottom.replace(/[\d.]/g, "") : 'px',
+                'marginRight':        image.style.marginRight ? image.style.marginRight.replace(/[^\d.]/g, "") : '',
+                'marginRightUnits':   image.style.marginRight ? image.style.marginRight.replace(/[\d.]/g, "") : 'px',
+				'title':              image.title,
+                'className':          image.className.replace("x-htmleditor-imageupload-bordeResize", "").replace("x-htmleditor-imageupload-bordeSelect", ""),
+				'src':                image.src,
+				'float':              cssFloat
+			};
+			
+			this.down('form').getForm().setValues(values);
+			this.down('#fieldOptions').expand();   
         }
     },
     getImage: function () {
         // we have to create the node on iframe's document or Opera will explode!
         var image = this.iframeDoc.createElement("img");
-
-        var title = this.down('#title').getValue();
-        var width = this.down('#width').getValue();
-        var height = this.down('#height').getValue();
-        var paddingTop = this.down('#paddingTop').getValue();
-        var paddingBottom = this.down('#paddingBottom').getValue();
-        var paddingLeft = this.down('#paddingLeft').getValue();
-        var paddingRight = this.down('#paddingRight').getValue();
-        var marginTop = this.down('#marginTop').getValue();
-        var marginBottom = this.down('#marginBottom').getValue();
-        var marginLeft = this.down('#marginLeft').getValue();
-        var marginRight = this.down('#marginRight').getValue();
-        var className = this.down('#className').getValue();
-        var cssFloat = this.down('#float').getValue();
-        var display = this.down('#display').getValue();
+		var values = this.down('form').getForm().getValues();
 
         // set image attrs
-        image.setAttribute('src', this.down('#src').getValue());
-        if (title) image.setAttribute('title', title);
-        if (className) image.className = className;
-        if (display) image.style.display = display;
-        if (width) image.style.width = width + this.down('#widthUnits').getValue();
-        if (height) image.style.height = height + this.down('#heightUnits').getValue();
-        if (paddingTop) image.style.paddingTop = paddingTop + this.down('#paddingTopUnits').getValue();
-        if (paddingBottom) image.style.paddingBottom = paddingBottom + this.down('#paddingBottomUnits').getValue();
-        if (paddingLeft) image.style.paddingLeft = paddingLeft + this.down('#paddingLeftUnits').getValue();
-        if (paddingRight) image.style.paddingRight = paddingRight + this.down('#paddingRightUnits').getValue();
-        if (marginTop) image.style.marginTop = marginTop + this.down('#marginTopUnits').getValue();
-        if (marginBottom) image.style.marginBottom = marginBottom + this.down('#marginBottomUnits').getValue();
-        if (marginLeft) image.style.marginLeft = marginLeft + this.down('#marginLeftUnits').getValue();
-        if (marginRight) image.style.marginRight = marginRight + this.down('#marginRightUnits').getValue();
-        if (cssFloat != 'none') {
+        image.setAttribute('src', values['src']);
+        if (values['title'])         image.setAttribute('title', values['title']);
+        if (values['className'])     image.className           = values['className'];
+        if (values['display'])       image.style.display       = values['display'];
+        if (values['width'])         image.style.width         = values['width'] + values['widthUnits'];
+        if (values['height'])        image.style.height        = values['height'] + values['heightUnits'];
+        if (values['paddingTop'])    image.style.paddingTop    = values['paddingTop'] + values['paddingTopUnits'];
+        if (values['paddingBottom']) image.style.paddingBottom = values['paddingBottom'] + values['paddingBottomUnits'];
+        if (values['paddingLeft'])   image.style.paddingLeft   = values['paddingLeft'] + values['paddingLeftUnits'];
+        if (values['paddingRight'])  image.style.paddingRight  = values['paddingRight'] + values['paddingRightUnits'];
+        if (values['marginTop'])     image.style.marginTop     = values['marginTop'] + values['marginTopUnits'];
+        if (values['marginBottom'])  image.style.marginBottom  = values['marginBottom'] + values['marginBottomUnits'];
+        if (values['marginLeft'])    image.style.marginLeft    = values['marginLeft'] + values['marginLeftUnits'];
+        if (values['marginRight'])   image.style.marginRight   = values['marginRight'] + values['marginRightUnits'];
+        if (values['cssFloat'] != 'none') {
             if (Ext.isIE) {
-                image.style.styleFloat = cssFloat;
-            } else image.style.cssFloat = cssFloat;
+                image.style.styleFloat = values['float'];
+            } else image.style.cssFloat = values['float'];
         }
 
         //internet explorer add this two attrs, and we dont need them
