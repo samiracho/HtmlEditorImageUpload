@@ -153,33 +153,26 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         // focusing on the editor we avoid this problem
         if (Ext.isGecko) this.cmp.focus();
 
+
+		Ext.fly(cmpDoc).on({
+			mousedown: function (evt) {
+				me._docMouseDown(evt);
+			},
+			scope: me
+		});
+		
         // little hack to allow image drag, and mousewheel resizing on webkit browsers and mousewheel in opera browser.
         if ((Ext.isWebKit || Ext.isOpera)) {
-            var me = this;
-            var frameName = me.cmp.iframeEl.dom.name;
-            var iframe;
-
-            if (document.frames) iframe = document.frames[frameName];
-            else iframe = window.frames[frameName];
-
+			
             // we have to inject our custom css file to the iframe's head
-            var ss = iframe.document.createElement("link");
+            var ss = cmpDoc.createElement("link");
             ss.type = "text/css";
             ss.rel = "stylesheet";
             ss.href = me.iframeCss;
 
-            if (document.all) iframe.document.createStyleSheet(ss.href);
-            else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
+            if (document.all) cmpDoc.createStyleSheet(ss.href);
+            else cmpDoc.getElementsByTagName("head")[0].appendChild(ss);
 
-            // Add listeners to the iframe document
-            iframe = document.getElementById(me.cmp.iframeEl.dom.id);
-
-            Ext.fly(cmpDoc).on({
-                click: function (evt) {
-                    me._docClick(evt, iframe)
-                },
-                scope: me
-            });
 
             if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
                 Ext.fly(cmpDoc.body).on({
@@ -322,25 +315,25 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     },
     //private
     // adds a border surrounding the image on webkit browsers
-    _docClick: function (evt) {
+    _docMouseDown: function (evt) {
 
         var me = this;
         var target = evt.getTarget();
 
-        me._removeSelectionHelpers();
+        if (Ext.isWebKit || Ext.isOpera)me._removeSelectionHelpers();
 
         if (target.tagName == "IMG") {
-
-            if (Ext.isWebKit || Ext.isOpera) {
+            
+			// toggle on image button
+            // webkit browsers return true to some querycommand state when one image is selected. Thats why bold, italic and underline buttons are highlighted
+            // bug http://code.google.com/p/chromium/issues/detail?id=31316
+            me.uploadButton.toggle(true);
+			
+			if (Ext.isWebKit || Ext.isOpera) {
                 target.className = target.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
                 if (me.wheelResize || me.dragResize) target.className += " x-htmleditor-imageupload-bordeResize";
                 else target.className += " x-htmleditor-imageupload-bordeSelect";
             }
-
-            //toggle on image button
-            // webkit browsers return true to some querycommand state when one image is selected. Thats why bold, italic and underline buttons are highlighted
-            // bug http://code.google.com/p/chromium/issues/detail?id=31316
-            me.uploadButton.toggle(true);
 
             // select image on click. 
             // On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
