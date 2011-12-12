@@ -987,6 +987,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 			};
 			
 			this.down('form').getForm().setValues(values);
+			this.down('[name=src]').setRawValue(values['src']);
 			this.down('#fieldOptions').expand();   
         }
     },
