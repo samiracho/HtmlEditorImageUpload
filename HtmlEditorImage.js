@@ -176,7 +176,6 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                 me._webKitResize(evt, iframe.contentWindow.document, iframe.contentWindow)
             }, false);
         }
-		
     },
 	/*
     initialize: function () {
@@ -359,40 +358,39 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             }
         }
     },
+	_wheelResize: function (e) {
+		var event = window.event || e;
+
+		if (e.srcElement.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
+			var delta = event.detail ? event.detail * (-120) : event.wheelDelta
+			e.srcElement.style.width = (delta <= -120) ? e.srcElement.width - 10 : e.srcElement.width + 10;
+			e.srcElement.style.height = (delta <= -120) ? e.srcElement.height - 10 : e.srcElement.height + 10;
+			if (event.preventDefault) event.preventDefault();
+			else return false
+		} else return;
+     },
+	 _mouseDragResize: function (e) {
+            if (e.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
+				var width = event.pageX - e.offsetLeft;
+                var height = event.pageY - e.offsetTop;
+                e.style.width = width + "px";
+                e.style.height = height + "px";
+
+                if (e.preventDefault) e.preventDefault();
+                else return false
+            }
+	},
 	_webKitResize: function (evt, document, window) {
 
         var me = this;
 		var imgs = document.body.getElementsByTagName("IMG");
 
-        var mouseWheelResize = function (e) {
-                var event = window.event || e;
-
-                if (this.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
-                    var delta = event.detail ? event.detail * (-120) : event.wheelDelta
-                    this.style.width = (delta <= -120) ? this.width - 10 : this.width + 10;
-                    this.style.height = (delta <= -120) ? this.height - 10 : this.height + 10;
-                    if (event.preventDefault) event.preventDefault();
-                    else return false
-                } else return;
-            };
-
-        var mouseDragResize = function (event) {
-                if (this.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
-					var width = event.pageX - this.offsetLeft;
-					var height = event.pageY - this.offsetTop;
-					this.style.width = width + "px";
-					this.style.height = height + "px";
-
-					if (event.preventDefault) event.preventDefault();
-					else return false
-				} else return;
-            };
-
         for (i = 0; i < imgs.length; i++) {
             imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
             if (imgs[i].className == "") imgs[i].removeAttribute("class");
-            if (Ext.isWebKit && me.dragResize) imgs[i].removeEventListener('drag', mouseDragResize, false);
-            if(me.wheelResize)imgs[i].removeEventListener('mousewheel', mouseWheelResize, false);
+            if (Ext.isWebKit && me.dragResize) imgs[i].removeEventListener('drag', me._mouseDragResize, false);
+            if((Ext.isWebKit || Ext.isOpera) && me.wheelResize)imgs[i].removeEventListener('mousewheel', me._wheelResize, false);
+			
         }
 
         if (evt.srcElement.tagName == "IMG") {
@@ -401,8 +399,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             if(me.wheelResize || me.dragResize)evt.srcElement.className += " x-htmleditor-imageupload-bordeResize";
 			else evt.srcElement.className += " x-htmleditor-imageupload-bordeSelect";
 			
-            if (Ext.isWebKit && me.dragResize) evt.srcElement.addEventListener('drag', mouseDragResize, false);
-            if(me.wheelResize)evt.srcElement.addEventListener('mousewheel', mouseWheelResize, false);
+            if ( Ext.isWebKit && me.dragResize) evt.srcElement.addEventListener('drag',  me._mouseDragResize, false);
+            if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize)evt.srcElement.addEventListener('mousewheel', me._wheelResize, false);
 
             // select image. On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
             if (Ext.isWebKit) {
