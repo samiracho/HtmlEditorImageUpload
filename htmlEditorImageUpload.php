@@ -138,15 +138,16 @@ function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit 
     // open directory and walk through the filenames
     while ($file = readdir($handler)) {
 	
-	// extensión del archivo
-	$ext =  strtolower( substr($file, strpos($file,'.'), strlen($file)-1) );
+		// extensión del archivo
+		$ext =  strtolower( substr($file, strpos($file,'.'), strlen($file)-1) );
 
-	if(in_array($ext,explode(',', $allowedFormats)))
-	{
-		  if ($file != "." && $file != "..") {
-			$results[] = array('fullname'=>$file,'name'=>substr($file,0, 20).'...','src'=>$imagesUrl.$file);
-		  }
-	  }
+		if(in_array($ext,explode(',', $allowedFormats)))
+		{
+			$resume = strlen ( $file ) > 18 ?  substr($file,0, 18).'...' : $file;
+			if ($file != "." && $file != "..") {
+				$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file);
+			}
+		}
     }
 	
 	return array(

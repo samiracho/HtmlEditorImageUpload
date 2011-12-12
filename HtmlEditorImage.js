@@ -144,6 +144,41 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         this.cmp.on('render', this.onRender, this);
         this.cmp.on('initialize', this.initialize, this);
     },
+	initialize: function () {
+		var me = this;
+        var cmpDoc = this.cmp.getDoc();
+		
+		// Weird. In gecko browsers, if the user clicks directly on a photo, it loses the focus the first time.
+        // focusing on the editor we avoid this problem
+        if (Ext.isGecko) this.cmp.focus();
+
+        // little hack to allow image drag, and mousewheel resizing on webkit browsers and mousewheel in opera browser.
+        if ((Ext.isWebKit || Ext.isOpera)) {
+            
+            var frameName = me.cmp.iframeEl.dom.name;
+            var iframe;
+
+            if (document.frames) iframe = document.frames[frameName];
+            else iframe = window.frames[frameName];
+
+            // we have to add our custom css file to the iframe
+            var ss = iframe.document.createElement("link");
+            ss.type = "text/css";
+            ss.rel = "stylesheet";
+            ss.href = me.iframeCss;
+
+            if (document.all) iframe.document.createStyleSheet(ss.href);
+            else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
+
+            // to add resize listener on iframes document
+            iframe = document.getElementById(me.cmp.iframeEl.dom.id);
+            iframe.contentWindow.document.body.addEventListener('click', function (evt) {
+                me._webKitResize(evt, iframe.contentWindow.document, iframe.contentWindow)
+            }, false);
+        }
+		
+    },
+	/*
     initialize: function () {
 
         var me = this;
@@ -153,10 +188,21 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         // focusing on the editor we avoid this problem
         if (Ext.isGecko) this.cmp.focus();
 
-
+		if ((Ext.isWebKit || Ext.isOpera)) {
+		// we have to inject our custom css file to the iframe's head
+            var ss = cmpDoc.createElement("link");
+            ss.type = "text/css";
+            ss.rel = "stylesheet";
+            ss.href = me.iframeCss;
+		
+			if (document.all) iframe.document.createStyleSheet(ss.href);
+            else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
+			
+		}
+		
 		Ext.fly(cmpDoc).on({
-			mousedown: function (evt) {
-				me._docMouseDown(evt);
+			click: function (evt) {
+				me._docClick(evt);
 			},
 			scope: me
 		});
@@ -192,7 +238,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                 })
             }
         }
-    },
+    }*/
     onRender: function () {
 
         var uploadButton = Ext.create('Ext.button.Button', {
@@ -313,9 +359,61 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             }
         }
     },
+	_webKitResize: function (evt, document, window) {
+
+        var me = this;
+		var imgs = document.body.getElementsByTagName("IMG");
+
+        var mouseWheelResize = function (e) {
+                var event = window.event || e;
+
+                if (this.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
+                    var delta = event.detail ? event.detail * (-120) : event.wheelDelta
+                    this.style.width = (delta <= -120) ? this.width - 10 : this.width + 10;
+                    this.style.height = (delta <= -120) ? this.height - 10 : this.height + 10;
+                    if (event.preventDefault) event.preventDefault();
+                    else return false
+                } else return;
+            };
+
+        var mouseDragResize = function (event) {
+                if (this.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
+					var width = event.pageX - this.offsetLeft;
+					var height = event.pageY - this.offsetTop;
+					this.style.width = width + "px";
+					this.style.height = height + "px";
+
+					if (event.preventDefault) event.preventDefault();
+					else return false
+				} else return;
+            };
+
+        for (i = 0; i < imgs.length; i++) {
+            imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
+            if (imgs[i].className == "") imgs[i].removeAttribute("class");
+            if (Ext.isWebKit && me.dragResize) imgs[i].removeEventListener('drag', mouseDragResize, false);
+            if(me.wheelResize)imgs[i].removeEventListener('mousewheel', mouseWheelResize, false);
+        }
+
+        if (evt.srcElement.tagName == "IMG") {
+			me.uploadButton.toggle(true);
+            evt.srcElement.className = evt.srcElement.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
+            if(me.wheelResize || me.dragResize)evt.srcElement.className += " x-htmleditor-imageupload-bordeResize";
+			else evt.srcElement.className += " x-htmleditor-imageupload-bordeSelect";
+			
+            if (Ext.isWebKit && me.dragResize) evt.srcElement.addEventListener('drag', mouseDragResize, false);
+            if(me.wheelResize)evt.srcElement.addEventListener('mousewheel', mouseWheelResize, false);
+
+            // select image. On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
+            if (Ext.isWebKit) {
+                var sel = window.getSelection ? window.getSelection() : window.document.selection;
+                sel.setBaseAndExtent(evt.srcElement, 0, evt.srcElement, 1);
+            }
+        }else me.uploadButton.toggle(false);
+    },
     //private
     // adds a border surrounding the image on webkit browsers
-    _docMouseDown: function (evt) {
+    _docClick: function (evt) {
 
         var me = this;
         var target = evt.getTarget();
@@ -955,6 +1053,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             } else {
                 cssFloat = image.style.cssFloat ? image.style.cssFloat : 'none';
             }
+		
 		
             var values = {
 				'display':            image.style.display ? image.style.display : '',
