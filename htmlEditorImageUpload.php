@@ -4,7 +4,7 @@
 $allowedFormats = ".jpg,.jpeg,.gif,.png";								// Allowed image formats
 $maxSize        = "102400"; 											// Max image size. 10485760 = 10MB
 $imagesPath     = "uploads/"; 											// path where the files will be uploaded to the server
-$imagesUrl      = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/"; 	// url to the images
+$imagesUrl      = "http://yourdomain.com/imageuploadPlugin/uploads/"; 	// url to the images
 
 
 if(isset($_REQUEST['action']))

@@ -191,18 +191,25 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             });
         }
 
-        // to remove selectors on paste
+		// double click on image
+        flyDoc.on({
+            dblclick: me._dblClick,
+            scope: me
+        });
+		
+        // to remove custom attr
         flyDoc.on({
             paste: me._removeSelectionHelpers,
             scope: me
         });
-    },
+    },	
     beforeDestroy: function () {
         var me = this;
         var flyDoc = Ext.fly(me.cmp.getDoc());
 
         if (me.uploadDialog) me.uploadDialog.destroy();
         flyDoc.un('mouseup', me._docMouseUp, me);
+		flyDoc.un('dblclick', me._dblClick, me);
         if (me.wheelResize) flyDoc.un('mousewheel', me._wheelResize, me);
         if (me.dragResize) flyDoc.un('drag', me._dragResize, me);
         flyDoc.un('paste', me._removeSelectionHelpers, me);
@@ -225,6 +232,17 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         this.cmp.getToolbar().add(uploadButton);
 
     },
+	// private
+	_dblClick: function(evt)
+	{
+		var me = this;
+		var target =evt.getTarget();
+		
+		if(target.tagName == "IMG")
+		{
+			me._uploadImage()
+		}
+	},
     //private
     _uploadImage: function () {
 
@@ -646,7 +664,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         xtype: 'fieldcontainer',
                         layout: {
                             type: 'table',
-                            columns: 2
+                            columns: 3
                         },
                         fieldLabel: '',
                         defaults: {
@@ -677,6 +695,11 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             displayField: 'name',
                             valueField: 'value'
                         }, {
+							xtype: 'checkboxfield',
+							fieldLabel: '',
+							name:'consProp',
+							boxLabel: 'Constrain proportions'
+						}, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Height'),
                             name: 'height'
