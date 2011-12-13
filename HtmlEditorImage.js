@@ -143,18 +143,16 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         this.cmp = panel;
         this.cmp.on('render', this.onRender, this);
         this.cmp.on('initialize', this.initialize, this);
+        this.cmp.on('beforedestroy', this.beforeDestroy, this);
     },
-	initialize: function () {
-		var me = this;
+    initialize: function () {
+        var me = this;
         var cmpDoc = this.cmp.getDoc();
-		
-		// Weird. In gecko browsers, if the user clicks directly on a photo, it loses the focus the first time.
-        // focusing on the editor we avoid this problem
-        if (Ext.isGecko) this.cmp.focus();
+        var flyDoc = Ext.fly(cmpDoc);
 
-        // little hack to allow image drag, and mousewheel resizing on webkit browsers and mousewheel in opera browser.
+        // Inject custom css file to iframe's head in order to simulate image control selector on click, over webKit and Opera browsers
         if ((Ext.isWebKit || Ext.isOpera)) {
-            
+
             var frameName = me.cmp.iframeEl.dom.name;
             var iframe;
 
@@ -169,75 +167,46 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
             if (document.all) iframe.document.createStyleSheet(ss.href);
             else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
-
-            // to add resize listener on iframes document
-            iframe = document.getElementById(me.cmp.iframeEl.dom.id);
-            iframe.contentWindow.document.body.addEventListener('click', function (evt) {
-                me._webKitResize(evt, iframe.contentWindow.document, iframe.contentWindow)
-            }, false);
         }
+
+        // attach event to control when the user clicks on image
+        flyDoc.on({
+            mouseup: me._docMouseUp,
+            scope: me
+        });
+
+        // mousewheel resize event
+        if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
+            flyDoc.on({
+                mousewheel: me._wheelResize,
+                scope: me
+            });
+        }
+
+        // mouse drag resize event
+        if (Ext.isWebKit && me.dragResize) {
+            flyDoc.on({
+                drag: me._dragResize,
+                scope: me
+            });
+        }
+
+        // to remove selectors on paste
+        flyDoc.on({
+            paste: me._removeSelectionHelpers,
+            scope: me
+        });
     },
-	/*
-    initialize: function () {
-
+    beforeDestroy: function () {
         var me = this;
-        var cmpDoc = this.cmp.getDoc();
+        var flyDoc = Ext.fly(me.cmp.getDoc());
 
-        // Weird. In gecko browsers, if the user clicks directly on a photo, it loses the focus the first time.
-        // focusing on the editor we avoid this problem
-        if (Ext.isGecko) this.cmp.focus();
-
-		if ((Ext.isWebKit || Ext.isOpera)) {
-		// we have to inject our custom css file to the iframe's head
-            var ss = cmpDoc.createElement("link");
-            ss.type = "text/css";
-            ss.rel = "stylesheet";
-            ss.href = me.iframeCss;
-		
-			if (document.all) iframe.document.createStyleSheet(ss.href);
-            else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
-			
-		}
-		
-		Ext.fly(cmpDoc).on({
-			click: function (evt) {
-				me._docClick(evt);
-			},
-			scope: me
-		});
-		
-        // little hack to allow image drag, and mousewheel resizing on webkit browsers and mousewheel in opera browser.
-        if ((Ext.isWebKit || Ext.isOpera)) {
-			
-            // we have to inject our custom css file to the iframe's head
-            var ss = cmpDoc.createElement("link");
-            ss.type = "text/css";
-            ss.rel = "stylesheet";
-            ss.href = me.iframeCss;
-
-            if (document.all) cmpDoc.createStyleSheet(ss.href);
-            else cmpDoc.getElementsByTagName("head")[0].appendChild(ss);
-
-
-            if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
-                Ext.fly(cmpDoc.body).on({
-                    mousewheel: function (evt) {
-                        me._docWheel(evt)
-                    },
-                    scope: me
-                })
-            }
-
-            if (Ext.isWebKit && me.dragResize) {
-                Ext.fly(cmpDoc.body).on({
-                    drag: function (evt) {
-                        me._docDrag(evt)
-                    },
-                    scope: me
-                })
-            }
-        }
-    }*/
+        if (me.uploadDialog) me.uploadDialog.destroy();
+        flyDoc.un('mouseup', me._docMouseUp, me);
+        if (me.wheelResize) flyDoc.un('mousewheel', me._wheelResize, me);
+        if (me.dragResize) flyDoc.un('drag', me._dragResize, me);
+        flyDoc.un('paste', me._removeSelectionHelpers, me);
+    },
     onRender: function () {
 
         var uploadButton = Ext.create('Ext.button.Button', {
@@ -266,6 +235,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         var sel = "";
         var range = "";
         var image = "";
+        var imagesList = doc.body.getElementsByTagName("IMG");
+        var imagesListLength = imagesList.length;
 
         //insertAtCursor function is completely useless for this purpose, so I need to write all this stuff to insert html at cursor position	
         // I need to know if the browser uses the W3C way or the Internet Explorer method
@@ -289,15 +260,26 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             range = sel.createRange();
         }
 
-        // to make the things easier, if the user has an image selected when he presses the image upload button, I mark it with a custom attr "html_imgediting".
+        // to make the things easier, if the user has an image selected when he presses the image upload button, I mark it with a custom attr "iu_edit".
         // afterwards, if the user presses the ok button I just need to find the image with that attr, and replace it with the new one.
         if (Ext.isIE && sel.type == "Control") {
-            image = range.item(0);
-            range.item(0).setAttribute('html_imgediting', '1');
+            if (range.item(0).tagName == "IMG") image = r;
         } else if (range.startContainer == range.endContainer) {
             if (range.endOffset - range.startOffset < 2) {
-                if (range.startContainer.hasChildNodes()) image = range.startContainer.childNodes[range.startOffset];
-                if (image) range.startContainer.childNodes[range.startOffset].setAttribute('html_imgediting', '1');
+                if (range.startContainer.hasChildNodes()) {
+                    var r = range.startContainer.childNodes[range.startOffset];
+                    if (r.tagName == "IMG") image = r;
+                }
+            }
+        }
+
+        if (!image) {
+            //if we dont find the image we try to search by editable attr
+            for (i = 0; i < imagesListLength; i++) {
+                if (parseInt(imagesList[i].getAttribute('iu_edit')) > 0) {
+                    image = imagesList[i];
+                    break;
+                }
             }
         }
 
@@ -308,22 +290,36 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             managerUrl: me.managerUrl,
             iframeDoc: doc,
             imageToEdit: image,
-            pageSize: me.pageSize
+            pageSize: me.pageSize,
+            uploadButton: me.uploadButton,
         });
 
+        me.uploadDialog.on('close', function () {
+            if (Ext.isIE) {
+                me.uploadButton.toggle(false);
+                me._removeSelectionHelpers()
+            }
+        }, me);
+
         me.uploadDialog.on('imageloaded', function () {
+
             var newImage = this.getImage();
 
             // if it's an edited image, we have to replace it with the new values
             if (image != "") {
-                var imgs = doc.body.getElementsByTagName("IMG");
-                for (i = 0; i < imgs.length; i++) {
-                    if (imgs[i].getAttribute('html_imgediting') == 1) {
+                for (i = 0; i < imagesListLength; i++) {
+                    if (parseInt(imagesList[i].getAttribute('iu_edit')) > 0) {
                         if (nonIeBrowser) {
-                            imgs[i].parentNode.replaceChild(newImage, imgs[i]);
-                        } else if (ieBrowser) {
-                            imgs[i].outerHTML = newImage.outerHTML;
+                            imagesList[i].parentNode.replaceChild(newImage, imagesList[i]);
+                            try {
+                                if (sel) {
+                                    sel.selectAllChildren(doc.body);
+                                    sel.collapseToStart();
+                                }
 
+                            } catch (ex) {};
+                        } else if (ieBrowser) {
+                            imagesList[i].outerHTML = newImage.outerHTML;
                         }
                         break;
                     }
@@ -342,6 +338,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
             me.imageToEdit = "";
             this.close();
+            me.uploadButton.toggle(false);
         });
 
         me.uploadDialog.loadImageDetails();
@@ -349,130 +346,61 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     },
     //private	
     _removeSelectionHelpers: function () {
-        var imgs = this.cmp.getDoc().body.getElementsByTagName("IMG");
-
-        if (Ext.isWebKit || Ext.isOpera) {
-            for (i = 0; i < imgs.length; i++) {
-                imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-                if (imgs[i].className == "") imgs[i].removeAttribute("class");
-            }
-        }
-    },
-	_wheelResize: function (e) {
-		var event = window.event || e;
-
-		if (e.srcElement.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
-			var delta = event.detail ? event.detail * (-120) : event.wheelDelta
-			e.srcElement.style.width = (delta <= -120) ? e.srcElement.width - 10 : e.srcElement.width + 10;
-			e.srcElement.style.height = (delta <= -120) ? e.srcElement.height - 10 : e.srcElement.height + 10;
-			if (event.preventDefault) event.preventDefault();
-			else return false
-		} else return;
-     },
-	 _mouseDragResize: function (e) {
-            if (e.className.search("x-htmleditor-imageupload-bordeResize") > 0 ) {
-				var width = event.pageX - e.offsetLeft;
-                var height = event.pageY - e.offsetTop;
-                e.style.width = width + "px";
-                e.style.height = height + "px";
-
-                if (e.preventDefault) e.preventDefault();
-                else return false
-            }
-	},
-	_webKitResize: function (evt, document, window) {
-
         var me = this;
-		var imgs = document.body.getElementsByTagName("IMG");
+        var imagesList = me.cmp.getDoc().body.getElementsByTagName("IMG");
+        var imagesListLength = imagesList.length;
 
-        for (i = 0; i < imgs.length; i++) {
-            imgs[i].className = imgs[i].className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-            if (imgs[i].className == "") imgs[i].removeAttribute("class");
-            if (Ext.isWebKit && me.dragResize) imgs[i].removeEventListener('drag', me._mouseDragResize, false);
-            if((Ext.isWebKit || Ext.isOpera) && me.wheelResize)imgs[i].removeEventListener('mousewheel', me._wheelResize, false);
-			
+        for (i = 0; i < imagesListLength; i++) {
+            imagesList[i].removeAttribute('iu_edit');
         }
-
-        if (evt.srcElement.tagName == "IMG") {
-			me.uploadButton.toggle(true);
-            evt.srcElement.className = evt.srcElement.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-            if(me.wheelResize || me.dragResize)evt.srcElement.className += " x-htmleditor-imageupload-bordeResize";
-			else evt.srcElement.className += " x-htmleditor-imageupload-bordeSelect";
-			
-            if ( Ext.isWebKit && me.dragResize) evt.srcElement.addEventListener('drag',  me._mouseDragResize, false);
-            if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize)evt.srcElement.addEventListener('mousewheel', me._wheelResize, false);
-
-            // select image. On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
-            if (Ext.isWebKit) {
-                var sel = window.getSelection ? window.getSelection() : window.document.selection;
-                sel.setBaseAndExtent(evt.srcElement, 0, evt.srcElement, 1);
-            }
-        }else me.uploadButton.toggle(false);
     },
-    //private
-    // adds a border surrounding the image on webkit browsers
-    _docClick: function (evt) {
+    _wheelResize: function (e) {
+        var target = e.getTarget();
+        if (target.tagName == "IMG" && target.getAttribute('iu_edit') == 1) {
+            var delta = e.getWheelDelta();
+            var width = target.style.width ? parseInt(target.style.width.replace(/[^\d.]/g, "")) : target.width;
+            var height = target.style.height ? parseInt(target.style.height.replace(/[^\d.]/g, "")) : target.height;
+
+            target.style.width = (delta < 1) ? width - 10 : width + 10;
+            target.style.height = (delta < 1) ? height - 10 : height + 10;
+
+            e.preventDefault();
+        } else return;
+    },
+    _dragResize: function (e) {
+
+        var target = e.getTarget();
+
+        if (target.tagName == "IMG" && target.getAttribute('iu_edit') == 1) {
+
+            var width = e.getX() - target.offsetLeft;
+            var height = e.getY() - target.offsetTop;
+            target.style.width = width + "px";
+            target.style.height = height + "px";
+
+            e.preventDefault();
+        } else return;
+    },
+    // when user clicks on content editable area
+    _docMouseUp: function (evt) {
 
         var me = this;
         var target = evt.getTarget();
 
-        if (Ext.isWebKit || Ext.isOpera)me._removeSelectionHelpers();
+        me._removeSelectionHelpers();
 
         if (target.tagName == "IMG") {
-            
-			// toggle on image button
-            // webkit browsers return true to some querycommand state when one image is selected. Thats why bold, italic and underline buttons are highlighted
-            // bug http://code.google.com/p/chromium/issues/detail?id=31316
             me.uploadButton.toggle(true);
-			
-			if (Ext.isWebKit || Ext.isOpera) {
-                target.className = target.className.replace(" x-htmleditor-imageupload-bordeResize", "").replace(" x-htmleditor-imageupload-bordeSelect", "");
-                if (me.wheelResize || me.dragResize) target.className += " x-htmleditor-imageupload-bordeResize";
-                else target.className += " x-htmleditor-imageupload-bordeSelect";
-            }
+            if ((me.wheelResize || me.dragResize) && (Ext.isWebKit || Ext.isOpera)) target.setAttribute('iu_edit', '1');
+            else target.setAttribute('iu_edit', '2');
 
-            // select image on click. 
+            // select image. 
             // On safari if we copy and paste the image, class attrs are converted to inline styles. It's a browser bug.
             if (Ext.isWebKit) {
-                var sel = me.cmp.getWin().getSelection ? me.cmp.getWin().getSelection() : me.cmp.getDoc().selection;
+                var sel = this.cmp.getWin().getSelection ? this.cmp.getWin().getSelection() : this.cmp.getWin().document.selection;
                 sel.setBaseAndExtent(target, 0, target, 1);
             }
         } else me.uploadButton.toggle(false);
-    },
-    //private
-    // allows mousewheel resizing
-    _docWheel: function (evt) {
-
-        var target = evt.getTarget();
-
-        if (target.tagName == "IMG") {
-            if (target.className.search("x-htmleditor-imageupload-bordeResize") > 0) {
-                var delta = evt.getWheelDelta();
-                target.style.width = (delta < 1) ? target.width - 10 : target.width + 10;
-                target.style.height = (delta < 1) ? target.height - 10 : target.height + 10;
-                evt.preventDefault();
-            }
-        }
-    },
-    //private
-    // allows drag resizing
-    _docDrag: function (evt) {
-
-        if (!evt.getTarget) return;
-        var target = evt.getTarget();
-
-        if (target.tagName == "IMG") {
-
-            if (Ext.isWebKit) {
-                var width = evt.getPageX() - target.offsetLeft;
-                var height = evt.getPageY() - target.offsetTop;
-                target.style.width = width + "px";
-                target.style.height = height + "px";
-
-                if (evt.preventDefault) evt.preventDefault();
-                else return false
-            }
-        }
     }
 });
 
@@ -498,18 +426,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         show: function (panel) {
             // we force the focus on the dialog window to avoid control artifacts on IE
             panel.down('[name=src]').focus();
-        },
-        close: function (panel) {
-            // if we were editing a image we have to delete the custom attr
-            if (panel.imageToEdit) {
-                var imgs = panel.iframeDoc.body.getElementsByTagName("IMG");
-                for (i = 0; i < imgs.length; i++) {
-                    if (imgs[i].getAttribute('html_imgediting') == 1) {
-                        imgs[i].removeAttribute('html_imgediting');
-                        break;
-                    }
-                }
-            }
         }
     },
     initComponent: function () {
@@ -659,7 +575,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                                             'image': a.getAttribute('img_fullname')
                                                         },
                                                         success: function (fp, o) {
-                                                            var combo = me.down('#src');
+                                                            var combo = me.down('[name=src]');
                                                             combo.setValue('');
                                                             me.down('form').getForm().reset();
                                                         },
@@ -693,7 +609,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                     waitMsg: me.t('Uploading your photo...'),
                                     success: function (fp, o) {
                                         Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
-                                        var combo = me.down('#src');
+                                        var combo = me.down('[name=src]');
                                         combo.setRawValue(o.result.data['src']);
                                     },
                                     failure: function (form, action) {
@@ -1045,69 +961,69 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         //if user has an image selected get the image attrs
         if (image != "") {
 
-			var cssFloat = "";
+            var cssFloat = "";
             if (Ext.isIE) {
                 cssFloat = image.style.styleFloat ? image.style.styleFloat : 'none';
             } else {
                 cssFloat = image.style.cssFloat ? image.style.cssFloat : 'none';
             }
-		
-		
+
+
             var values = {
-				'display':            image.style.display ? image.style.display : '',
-				'width':              image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width,
-				'height':             image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height,
-				'widthUnits':         image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
-				'display':            image.style.display ? image.style.display : '',
-                'widthUnits':         image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
-                'heightUnits':        image.style.height ? image.style.height.replace(/[\d.]/g, "") : 'px',
-                'paddingTop':         image.style.paddingTop ? image.style.paddingTop.replace(/[^\d.]/g, "") : '',
-                'paddingTopUnits':    image.style.paddingTop ? image.style.paddingTop.replace(/[\d.]/g, "") : 'px',
-                'paddingLeft':        image.style.paddingLeft ? image.style.paddingLeft.replace(/[^\d.]/g, "") : '',
-                'paddingLeftUnits':   image.style.paddingLeft ? image.style.paddingLeft.replace(/[\d.]/g, "") : 'px',
-                'paddingBottom':      image.style.paddingBottom ? image.style.paddingBottom.replace(/[^\d.]/g, "") : '',
+                'display': image.style.display ? image.style.display : '',
+                'width': image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width,
+                'height': image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height,
+                'widthUnits': image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
+                'display': image.style.display ? image.style.display : '',
+                'widthUnits': image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
+                'heightUnits': image.style.height ? image.style.height.replace(/[\d.]/g, "") : 'px',
+                'paddingTop': image.style.paddingTop ? image.style.paddingTop.replace(/[^\d.]/g, "") : '',
+                'paddingTopUnits': image.style.paddingTop ? image.style.paddingTop.replace(/[\d.]/g, "") : 'px',
+                'paddingLeft': image.style.paddingLeft ? image.style.paddingLeft.replace(/[^\d.]/g, "") : '',
+                'paddingLeftUnits': image.style.paddingLeft ? image.style.paddingLeft.replace(/[\d.]/g, "") : 'px',
+                'paddingBottom': image.style.paddingBottom ? image.style.paddingBottom.replace(/[^\d.]/g, "") : '',
                 'paddingBottomUnits': image.style.paddingBottom ? image.style.paddingBottom.replace(/[\d.]/g, "") : 'px',
-                'paddingRight':       image.style.paddingRight ? image.style.paddingRight.replace(/[^\d.]/g, "") : '',
-                'paddingRightUnits':  image.style.paddingRight ? image.style.paddingRight.replace(/[\d.]/g, "") : 'px',
-                'marginTop':          image.style.marginTop ? image.style.marginTop.replace(/[^\d.]/g, "") : '',
-                'marginTopUnits':     image.style.marginTop ? image.style.marginTop.replace(/[\d.]/g, "") : 'px',
-                'marginLeft':         image.style.marginLeft ? image.style.marginLeft.replace(/[^\d.]/g, "") : '',
-                'marginLeftUnits':    image.style.marginLeft ? image.style.marginLeft.replace(/[\d.]/g, "") : 'px',
-                'marginBottom':       image.style.marginBottom ? image.style.marginBottom.replace(/[^\d.]/g, "") : '',
-                'marginBottomUnits':  image.style.marginBottom ? image.style.marginBottom.replace(/[\d.]/g, "") : 'px',
-                'marginRight':        image.style.marginRight ? image.style.marginRight.replace(/[^\d.]/g, "") : '',
-                'marginRightUnits':   image.style.marginRight ? image.style.marginRight.replace(/[\d.]/g, "") : 'px',
-				'title':              image.title,
-                'className':          image.className.replace("x-htmleditor-imageupload-bordeResize", "").replace("x-htmleditor-imageupload-bordeSelect", ""),
-				'src':                image.src,
-				'float':              cssFloat
-			};
-			
-			this.down('form').getForm().setValues(values);
-			this.down('[name=src]').setRawValue(values['src']);
-			this.down('#fieldOptions').expand();   
-        }
+                'paddingRight': image.style.paddingRight ? image.style.paddingRight.replace(/[^\d.]/g, "") : '',
+                'paddingRightUnits': image.style.paddingRight ? image.style.paddingRight.replace(/[\d.]/g, "") : 'px',
+                'marginTop': image.style.marginTop ? image.style.marginTop.replace(/[^\d.]/g, "") : '',
+                'marginTopUnits': image.style.marginTop ? image.style.marginTop.replace(/[\d.]/g, "") : 'px',
+                'marginLeft': image.style.marginLeft ? image.style.marginLeft.replace(/[^\d.]/g, "") : '',
+                'marginLeftUnits': image.style.marginLeft ? image.style.marginLeft.replace(/[\d.]/g, "") : 'px',
+                'marginBottom': image.style.marginBottom ? image.style.marginBottom.replace(/[^\d.]/g, "") : '',
+                'marginBottomUnits': image.style.marginBottom ? image.style.marginBottom.replace(/[\d.]/g, "") : 'px',
+                'marginRight': image.style.marginRight ? image.style.marginRight.replace(/[^\d.]/g, "") : '',
+                'marginRightUnits': image.style.marginRight ? image.style.marginRight.replace(/[\d.]/g, "") : 'px',
+                'title': image.title,
+                'className': image.className.replace("x-htmleditor-imageupload-bordeResize", "").replace("x-htmleditor-imageupload-bordeSelect", ""),
+                'src': image.src,
+                'float': cssFloat
+            };
+
+            this.down('form').getForm().setValues(values);
+            this.down('[name=src]').setRawValue(values['src']);
+            this.down('#fieldOptions').expand();
+        } else this.down('#fieldOptions').collapse();
     },
     getImage: function () {
         // we have to create the node on iframe's document or Opera will explode!
         var image = this.iframeDoc.createElement("img");
-		var values = this.down('form').getForm().getValues();
+        var values = this.down('form').getForm().getValues();
 
         // set image attrs
         image.setAttribute('src', values['src']);
-        if (values['title'])         image.setAttribute('title', values['title']);
-        if (values['className'])     image.className           = values['className'];
-        if (values['display'])       image.style.display       = values['display'];
-        if (values['width'])         image.style.width         = values['width'] + values['widthUnits'];
-        if (values['height'])        image.style.height        = values['height'] + values['heightUnits'];
-        if (values['paddingTop'])    image.style.paddingTop    = values['paddingTop'] + values['paddingTopUnits'];
+        if (values['title']) image.setAttribute('title', values['title']);
+        if (values['className']) image.className = values['className'];
+        if (values['display']) image.style.display = values['display'];
+        if (values['width']) image.style.width = values['width'] + values['widthUnits'];
+        if (values['height']) image.style.height = values['height'] + values['heightUnits'];
+        if (values['paddingTop']) image.style.paddingTop = values['paddingTop'] + values['paddingTopUnits'];
         if (values['paddingBottom']) image.style.paddingBottom = values['paddingBottom'] + values['paddingBottomUnits'];
-        if (values['paddingLeft'])   image.style.paddingLeft   = values['paddingLeft'] + values['paddingLeftUnits'];
-        if (values['paddingRight'])  image.style.paddingRight  = values['paddingRight'] + values['paddingRightUnits'];
-        if (values['marginTop'])     image.style.marginTop     = values['marginTop'] + values['marginTopUnits'];
-        if (values['marginBottom'])  image.style.marginBottom  = values['marginBottom'] + values['marginBottomUnits'];
-        if (values['marginLeft'])    image.style.marginLeft    = values['marginLeft'] + values['marginLeftUnits'];
-        if (values['marginRight'])   image.style.marginRight   = values['marginRight'] + values['marginRightUnits'];
+        if (values['paddingLeft']) image.style.paddingLeft = values['paddingLeft'] + values['paddingLeftUnits'];
+        if (values['paddingRight']) image.style.paddingRight = values['paddingRight'] + values['paddingRightUnits'];
+        if (values['marginTop']) image.style.marginTop = values['marginTop'] + values['marginTopUnits'];
+        if (values['marginBottom']) image.style.marginBottom = values['marginBottom'] + values['marginBottomUnits'];
+        if (values['marginLeft']) image.style.marginLeft = values['marginLeft'] + values['marginLeftUnits'];
+        if (values['marginRight']) image.style.marginRight = values['marginRight'] + values['marginRightUnits'];
         if (values['cssFloat'] != 'none') {
             if (Ext.isIE) {
                 image.style.styleFloat = values['float'];
