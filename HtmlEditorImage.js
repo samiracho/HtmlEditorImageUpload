@@ -148,7 +148,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     initialize: function () {
         var me = this;
         var cmpDoc = this.cmp.getDoc();
-        var flyDoc = Ext.fly(cmpDoc);
+        me.flyDoc = Ext.fly(cmpDoc);
 
         // Inject custom css file to iframe's head in order to simulate image control selector on click, over webKit and Opera browsers
         if ((Ext.isWebKit || Ext.isOpera)) {
@@ -170,49 +170,47 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         }
 
         // attach event to control when the user clicks on image
-        flyDoc.on({
+        me.flyDoc.on({
             mouseup: me._docMouseUp,
             scope: me
         });
 
         // mousewheel resize event
         if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
-            flyDoc.on({
+            me.flyDoc.on({
                 mousewheel: me._wheelResize,
                 scope: me
             });
         }
-
+		 
         // mouse drag resize event
         if (Ext.isWebKit && me.dragResize) {
-            flyDoc.on({
+            me.flyDoc.on({
                 drag: me._dragResize,
                 scope: me
             });
         }
 
 		// double click on image
-        flyDoc.on({
+        me.flyDoc.on({
             dblclick: me._dblClick,
             scope: me
         });
 		
         // to remove custom attr
-        flyDoc.on({
+        me.flyDoc.on({
             paste: me._removeSelectionHelpers,
             scope: me
         });
     },	
     beforeDestroy: function () {
         var me = this;
-        var flyDoc = Ext.fly(me.cmp.getDoc());
-
         if (me.uploadDialog) me.uploadDialog.destroy();
-        flyDoc.un('mouseup', me._docMouseUp, me);
-		flyDoc.un('dblclick', me._dblClick, me);
-        if (me.wheelResize) flyDoc.un('mousewheel', me._wheelResize, me);
-        if (me.dragResize) flyDoc.un('drag', me._dragResize, me);
-        flyDoc.un('paste', me._removeSelectionHelpers, me);
+        me.flyDoc.un('mouseup', me._docMouseUp, me);
+		me.flyDoc.un('dblclick', me._dblClick, me);
+        if (me.wheelResize) me.flyDoc.un('mousewheel', me._wheelResize, me);
+        if (me.dragResize) me.flyDoc.un('drag', me._dragResize, me);
+        me.flyDoc.un('paste', me._removeSelectionHelpers, me);
     },
     onRender: function () {
 
