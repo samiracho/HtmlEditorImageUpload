@@ -2,9 +2,9 @@
 
 // change these parameters to fit your server config
 $allowedFormats = ".jpg,.jpeg,.gif,.png";								// Allowed image formats
-$maxSize        = "102400"; 											// Max image size. 10485760 = 10MB
+$maxSize        = "1024000"; 											// Max image size. 10485760 = 10MB
 $imagesPath     = "uploads/"; 											// path where the files will be uploaded to the server
-$imagesUrl      = "http://yourdomain.com/imageuploadPlugin/uploads/"; 	// url to the images
+$imagesUrl      = "http://localhost/HtmlEditorImageUpload/uploads/"; 	// url to the images
 
 
 if(isset($_REQUEST['action']))

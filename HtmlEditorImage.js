@@ -446,6 +446,33 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             panel.down('[name=src]').focus();
         }
     },
+	setPreviewImage: function(src)
+	{
+		if(!this.previewComponent)this.previewComponent = this.down('#vistaPrevia');
+		this.previewComponent.setWidth('');
+		this.previewComponent.setHeight('');
+		this.previewComponent.setSrc(src);
+	},
+	resizePreviewImage: function(evt,el)
+	{
+		var comp = this;
+		var image = el;	
+		var width, height;
+		var maxWidth = maxHeight = 124;
+		if(image.src)
+		{
+			if(image.width >= image.height ){
+				width = image.width < maxWidth ? image.width : maxWidth; 
+				height = Math.ceil((width/image.width)*image.height)
+			}else{
+				height = image.height < maxHeight ? image.height : maxHeight;  
+				width = Math.ceil((height/image.height)*image.width)
+			}
+			
+			comp.setWidth(width);
+			comp.setHeight(height);
+		}
+	},
     initComponent: function () {
         var me = this;
         var imageStore = Ext.create('Ext.data.Store', {
@@ -560,10 +587,15 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     store: imageStore,
                     displayField: 'src',
                     valueField: 'src',
+					checkChangeBuffer:200,
                     listeners: {
                         expand: function (combo, options) {
                             combo.store.load(combo.store.lastOptions);
-                        }
+                        },
+						change: function(combo)
+						{
+							me.setPreviewImage(combo.getValue());
+						}
                     },
                     listConfig: {
                         loadingText: 'Searching...',
@@ -596,6 +628,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                                             var combo = me.down('[name=src]');
                                                             combo.setValue('');
                                                             me.down('form').getForm().reset();
+															me.setPreviewImage('');
                                                         },
                                                         failure: function (form, action) {
                                                             Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
@@ -629,6 +662,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                         Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
                                         var combo = me.down('[name=src]');
                                         combo.setRawValue(o.result.data['src']);
+										me.setPreviewImage(o.result.data['src']);
                                     },
                                     failure: function (form, action) {
                                         Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
@@ -656,15 +690,49 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     collapsible: true,
                     layout: 'anchor',
                     collapsed: false,
+					layout: {
+                            type: 'table',
+                            columns: 2
+                    },
                     defaults: {
                         anchor: '100%',
                         labelWidth: 72
                     },
-                    items: [{
+                    items: [	
+					{
+						xtype: 'container',
+						margin:4,
+						padding:1,
+						layout: {
+							align: 'middle',
+							pack: 'center',
+							type: 'hbox'
+						},
+						style: {
+							border: '1px solid #ccc',
+						},
+						height: 128,
+						width: 128,
+						items: [
+						{
+							xtype: 'image',
+							itemId: 'vistaPrevia',
+							listeners:{
+								render: function(comp){
+									var flyImg = Ext.fly(comp.getEl().dom);
+									flyImg.on('load',me.resizePreviewImage,comp);
+								},
+								beforedestroy: function(comp){
+									var flyImg = Ext.fly(comp.getEl().dom);
+									flyImg.un('load',me.resizePreviewImage,comp);
+								}
+							}
+						}]
+					},{
                         xtype: 'fieldcontainer',
                         layout: {
                             type: 'table',
-                            columns: 3
+                            columns: 2
                         },
                         fieldLabel: '',
                         defaults: {
@@ -678,6 +746,19 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
                         },
                         items: [{
+							colspan:2,
+							xtype: 'combobox',
+							width:232,
+							name: 'float',
+							queryMode: 'local',
+							editable: false,
+							allowBlank: false,
+							fieldLabel: me.t('Align'),
+							value: 'left',
+							store: alignStore,
+							displayField: 'name',
+							valueField: 'value'
+						},{
                             xtype: 'numberfield',
                             fieldLabel: me.t('Width'),
                             name: 'width'
@@ -695,11 +776,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             displayField: 'name',
                             valueField: 'value'
                         }, {
-							xtype: 'checkboxfield',
-							fieldLabel: '',
-							name:'consProp',
-							boxLabel: 'Constrain proportions'
-						}, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Height'),
                             name: 'height'
@@ -716,18 +792,14 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             store: unitsStore,
                             displayField: 'name',
                             valueField: 'value'
-                        }]
-                    }, {
-                        xtype: 'combobox',
-                        name: 'float',
-                        queryMode: 'local',
-                        editable: false,
-                        allowBlank: false,
-                        fieldLabel: me.t('Align'),
-                        value: 'left',
-                        store: alignStore,
-                        displayField: 'name',
-                        valueField: 'value'
+                        }, {
+							colspan:2,
+							xtype: 'checkboxfield',
+							fieldLabel: '',
+							name:'consProp',
+							boxLabel: 'Constrain proportions',
+							disabled:true
+						}]
                     }]
                 }, {
                     xtype: 'fieldset',
