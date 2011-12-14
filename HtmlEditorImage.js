@@ -720,11 +720,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							listeners:{
 								render: function(comp){
 									var flyImg = Ext.fly(comp.getEl().dom);
-									flyImg.on('load',me.resizePreviewImage,comp);
-								},
-								beforedestroy: function(comp){
-									if(comp.getEl()){var flyImg = Ext.fly(comp.getEl().dom);
-									flyImg.un('load',me.resizePreviewImage,comp);}
+									comp.mon(flyImg, 'load',me.resizePreviewImage,comp);
 								}
 							}
 						}]
