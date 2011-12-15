@@ -566,7 +566,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         },
                         change: function (combo, oldValue, newValue) {
 						   // in ie8 sometimes this event is fired and I dont know why.
-						   if(!newValue)return;
+						   if(newValue == 'undefined')return;
 						   me._setPreviewImage(combo.getValue(), true);
                         }
                     },
@@ -601,7 +601,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                                             var combo = me.down('[name=src]');
                                                             combo.setValue('');
                                                             me.down('form').getForm().reset();
-                                                            me._setPreviewImage('');
+                                                            me._setPreviewImage('blank',true);
                                                         },
                                                         failure: function (form, action) {
                                                             Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
@@ -1201,7 +1201,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         myForm.down('#ratio').setValue(image.height / image.width);
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
 		
-        if (comp.resetImageSize === true) {
+        if (comp.resetImageSize == true) {
             widthComp.setRawValue(image.width);
             heightComp.setRawValue(image.height);
             myForm.down('[name=widthUnits]').setRawValue('px');
