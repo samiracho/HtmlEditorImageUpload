@@ -566,7 +566,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         },
                         change: function (combo, oldValue, newValue) {
 						   // in ie8 sometimes this event is fired and I dont know why.
-						   if(newValue == 'undefined')return;
+						   if(newValue == undefined)return;
 						   me._setPreviewImage(combo.getValue(), true);
                         }
                     },
