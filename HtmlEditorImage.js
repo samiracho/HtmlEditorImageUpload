@@ -356,8 +356,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             this.close();
             me.imageButton.toggle(false);
         });
-
-        me.uploadDialog.loadImageDetails();
+		
         me.uploadDialog.show();
     },
     //private	
@@ -442,8 +441,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     },
     title: '',
     listeners: {
-        show: function (panel) {
-            // we force the focus on the dialog window to avoid control artifacts on IE
+		show: function (panel) {       
+			// we force the focus on the dialog window to avoid control artifacts on IE
+			this._loadImageDetails();
             panel.down('[name=src]').focus();
         }
     },
@@ -559,17 +559,15 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     store: imageStore,
                     displayField: 'src',
                     valueField: 'src',
-                    checkChangeBuffer: 200,
-					suspendChangeEvent: true,
+                    checkChangeBuffer: 500,
                     listeners: {
                         expand: function (combo, options) {
                             combo.store.load(combo.store.lastOptions);
                         },
-                        change: function (combo) {
-                            if(combo.suspendChangeEvent){
-								combo.suspendChangeEvent = false;
-							}
-                            else me._setPreviewImage(combo.getValue(), true);
+                        change: function (combo, oldValue, newValue) {
+						   // in ie8 sometimes this event is fired and I dont know why.
+						   if(!newValue)return;
+						   me._setPreviewImage(combo.getValue(), true);
                         }
                     },
                     listConfig: {
@@ -675,8 +673,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             itemId: 'vistaPrevia',
                             resetImageSize: false,
                             listeners: {
-                                render: function (comp) {
-                                    var flyImg = Ext.fly(comp.getEl().dom);
+                                afterrender: function (comp) {
+									var flyImg = Ext.fly(comp.getEl().dom);
                                     comp.mon(flyImg, 'load', me._resizePreviewImage, comp);
                                 }
                             }
@@ -1037,7 +1035,39 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         me.callParent(arguments);
         me.setTitle(me.t('Insert/Edit Image'));
     },
-    loadImageDetails: function () {
+	getImage: function () {
+        // we have to create the node on iframe's document or Opera will explode!
+        var image = this.iframeDoc.createElement("img");
+        var values = this.down('form').getForm().getValues();
+
+        // set image attrs
+        image.setAttribute('src', values['src']);
+        if (values['title']) image.setAttribute('title', values['title']);
+        if (values['className']) image.className = values['className'];
+        if (values['display']) image.style.display = values['display'];
+        if (values['width']) image.style.width = values['width'] + values['widthUnits'];
+        if (values['height']) image.style.height = values['height'] + values['heightUnits'];
+        if (values['paddingTop']) image.style.paddingTop = values['paddingTop'] + values['paddingTopUnits'];
+        if (values['paddingBottom']) image.style.paddingBottom = values['paddingBottom'] + values['paddingBottomUnits'];
+        if (values['paddingLeft']) image.style.paddingLeft = values['paddingLeft'] + values['paddingLeftUnits'];
+        if (values['paddingRight']) image.style.paddingRight = values['paddingRight'] + values['paddingRightUnits'];
+        if (values['marginTop']) image.style.marginTop = values['marginTop'] + values['marginTopUnits'];
+        if (values['marginBottom']) image.style.marginBottom = values['marginBottom'] + values['marginBottomUnits'];
+        if (values['marginLeft']) image.style.marginLeft = values['marginLeft'] + values['marginLeftUnits'];
+        if (values['marginRight']) image.style.marginRight = values['marginRight'] + values['marginRightUnits'];
+        if (values['cssFloat'] != 'none') {
+            if (Ext.isIE) {
+                image.style.styleFloat = values['float'];
+            } else image.style.cssFloat = values['float'];
+        }
+
+        //internet explorer add this two attrs, and we dont need them
+        image.removeAttribute("width");
+        image.removeAttribute("height");
+
+        return image;
+    },
+    _loadImageDetails: function () {
 
         var image = this.imageToEdit;
 
@@ -1045,7 +1075,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         if (image != "") {
 
             var cssFloat = "";
-            if (Ext.isIE) {
+            
+			if(!image.style)image.style = new Object();
+			
+			if (Ext.isIE) {
                 cssFloat = image.style.styleFloat ? image.style.styleFloat : 'none';
             } else {
                 cssFloat = image.style.cssFloat ? image.style.cssFloat : 'none';
@@ -1079,51 +1112,20 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             };
 
             this.down('form').getForm().setValues(values);
-
+            
+			// show the image preview
+            this._setPreviewImage(image.src, false);
+			
             // I do this here because I dont want to fire the change events
 			// In IE 8 combobox change event is fired even with setRawValue. Bug?
-			this.down('[name=src]').setRawValue(image.src);
-			
+			this.down('[name=src]').setRawValue(image.src);	
             this.down('[name=width]').setRawValue(image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width);
             this.down('[name=height]').setRawValue(image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height);
 
-            // show the image preview
-            this._setPreviewImage(image.src, false);
 
             this.down('#fieldOptions').expand();
+			
         } else this.down('#fieldOptions').collapse();
-    },
-    getImage: function () {
-        // we have to create the node on iframe's document or Opera will explode!
-        var image = this.iframeDoc.createElement("img");
-        var values = this.down('form').getForm().getValues();
-
-        // set image attrs
-        image.setAttribute('src', values['src']);
-        if (values['title']) image.setAttribute('title', values['title']);
-        if (values['className']) image.className = values['className'];
-        if (values['display']) image.style.display = values['display'];
-        if (values['width']) image.style.width = values['width'] + values['widthUnits'];
-        if (values['height']) image.style.height = values['height'] + values['heightUnits'];
-        if (values['paddingTop']) image.style.paddingTop = values['paddingTop'] + values['paddingTopUnits'];
-        if (values['paddingBottom']) image.style.paddingBottom = values['paddingBottom'] + values['paddingBottomUnits'];
-        if (values['paddingLeft']) image.style.paddingLeft = values['paddingLeft'] + values['paddingLeftUnits'];
-        if (values['paddingRight']) image.style.paddingRight = values['paddingRight'] + values['paddingRightUnits'];
-        if (values['marginTop']) image.style.marginTop = values['marginTop'] + values['marginTopUnits'];
-        if (values['marginBottom']) image.style.marginBottom = values['marginBottom'] + values['marginBottomUnits'];
-        if (values['marginLeft']) image.style.marginLeft = values['marginLeft'] + values['marginLeftUnits'];
-        if (values['marginRight']) image.style.marginRight = values['marginRight'] + values['marginRightUnits'];
-        if (values['cssFloat'] != 'none') {
-            if (Ext.isIE) {
-                image.style.styleFloat = values['float'];
-            } else image.style.cssFloat = values['float'];
-        }
-
-        //internet explorer add this two attrs, and we dont need them
-        image.removeAttribute("width");
-        image.removeAttribute("height");
-
-        return image;
     },
 	_toggleConstrain:function (btn) {
 		var me = this;
@@ -1154,7 +1156,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 					me._setPreviewImage(o.result.data['src'],true);
 				},
 				failure: function (form, action) {
-					Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
+				if(action.result)Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
 					me.down('[name=photo-path]').reset();
 				}
 			});
@@ -1193,13 +1195,12 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         var widthComp = myForm.down('[name=width]');
         var heightComp = myForm.down('[name=height]')
 
-
         // save real image size
         myForm.down('#naturalWidth').setValue(image.width);
         myForm.down('#naturalHeight').setValue(image.height);
         myForm.down('#ratio').setValue(image.height / image.width);
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
-
+		
         if (comp.resetImageSize === true) {
             widthComp.setRawValue(image.width);
             heightComp.setRawValue(image.height);
