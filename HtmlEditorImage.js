@@ -68,7 +68,8 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         'Delete Image': '',
         'Confirmation': '',
         'Are you sure you want to delete this image?': '',
-        'Your photo has been uploaded.': ''
+        'Your photo has been uploaded.': '',
+		'Real Size':''
     },
 
     /**
@@ -376,9 +377,12 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             var delta = e.getWheelDelta();
             var width = target.style.width ? parseInt(target.style.width.replace(/[^\d.]/g, "")) : target.width;
             var height = target.style.height ? parseInt(target.style.height.replace(/[^\d.]/g, "")) : target.height;
-
+			
+			target.removeAttribute('height');
+			target.style.removeProperty('height');
+			
+			// change just width to keep aspect ratio
             target.style.width = (delta < 1) ? width - 10 : width + 10;
-            target.style.height = (delta < 1) ? height - 10 : height + 10;
 
             e.preventDefault();
         } else return;
@@ -457,8 +461,15 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 		var image = el;	
 		var width, height;
 		var maxWidth = maxHeight = 124;
+		
 		if(image.src)
 		{
+			// save real image size
+			comp.up('form').down('#naturalWidth').setValue(image.width);
+			comp.up('form').down('#naturalHeight').setValue(image.height);		
+			comp.up('form').down('#ratio').setValue(image.height/image.width);		
+			comp.up('form').down('#realSize').setValue(image.width+'x'+image.height);
+			
 			if(image.width >= image.height ){
 				width = image.width < maxWidth ? image.width : maxWidth; 
 				height = Math.ceil((width/image.width)*image.height)
@@ -726,7 +737,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                         xtype: 'fieldcontainer',
                         layout: {
                             type: 'table',
-                            columns: 2
+                            columns: 3
                         },
                         fieldLabel: '',
                         defaults: {
@@ -735,14 +746,14 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             labelAlign: 'left',
                             labelWidth: 72,
                             decimalSeparator: '.',
-                            width: 180,
+                            width: 164,
                             margin: '0 4 4 0'
 
                         },
                         items: [{
-							colspan:2,
+							colspan:3,
 							xtype: 'combobox',
-							width:232,
+							width:216,
 							name: 'float',
 							queryMode: 'local',
 							editable: false,
@@ -755,7 +766,26 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 						},{
                             xtype: 'numberfield',
                             fieldLabel: me.t('Width'),
-                            name: 'width'
+                            name: 'width',
+							minValue:1,
+							maxValue:9999,
+							listeners:{
+								change: function(combo, newValue, oldValue)
+								{
+									var height = me.down('[name=height]');
+									if(!newValue || !height.getValue())return;
+									if(newValue <= 0 ){
+										combo.setRawValue(oldValue);
+										return;					
+									}
+									if(me.down('#constraintProp').pressed)
+									{
+										var ratio = combo.up('form').down('#ratio').getValue();
+										var val = ratio > 1 ? newValue/ratio : ratio*newValue;
+										height.setRawValue(Math.round( ( val) ));									
+									}
+								}
+							}
                         }, {
                             xtype: 'combobox',
                             name: 'widthUnits',
@@ -769,10 +799,61 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             store: unitsStore,
                             displayField: 'name',
                             valueField: 'value'
-                        }, {
+                        },{
+							rowspan:2,
+							xtype:'button',
+							itemId:'constraintProp',
+							cls:'x-htmleditor-imageupload-constrain',
+							enableToggle:true,
+							pressed:false,
+							style:{
+								border:'0px',
+							},
+							width:24,
+							height:50,
+							listeners:{ 
+								click:function(btn)
+								{
+									if(!btn.pressed){
+										btn.removeCls('x-htmleditor-imageupload-constrain');
+										btn.addCls('x-htmleditor-imageupload-unconstrain');
+									}
+									else{
+										btn.removeCls('x-htmleditor-imageupload-unconstrain');
+										btn.addCls('x-htmleditor-imageupload-constrain');
+										
+										me.down('[name=width]').setRawValue( me.down('#naturalWidth').getValue());
+										me.down('[name=height]').setRawValue( me.down('#naturalHeight').getValue());
+									}
+								},
+								render: function(btn)
+								{
+									btn.toggle(true);
+								}
+							}
+						}, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Height'),
-                            name: 'height'
+                            name: 'height',
+							minValue:1,
+							maxValue:9999,
+							listeners:{
+								change: function(combo, newValue, oldValue)
+								{
+									var width = me.down('[name=width]');		
+									if(!newValue || ! width.getValue())return;
+									if(newValue <= 0 ){
+										combo.setRawValue(oldValue);
+										return;					
+									}
+									if(me.down('#constraintProp').pressed){
+										
+										var ratio = combo.up('form').down('#ratio').getValue();
+										var val = ratio <= 1 ? newValue/ratio : ratio*newValue;
+										width.setRawValue(Math.round( (val)  ));
+									}
+								}
+							}
                         }, {
                             xtype: 'combobox',
                             name: 'heightUnits',
@@ -786,15 +867,22 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             store: unitsStore,
                             displayField: 'name',
                             valueField: 'value'
-                        }, {
-							colspan:2,
-							xtype: 'checkboxfield',
-							fieldLabel: '',
-							name:'consProp',
-							boxLabel: 'Constrain proportions',
-							disabled:true
+                        },{
+							colspan:3,
+							xtype:'displayfield',
+							fieldLabel:'Real Size',
+							itemId:'realSize'
 						}]
-                    }]
+                    },{
+							xtype: 'hiddenfield',
+							itemId:'naturalWidth'
+					},{
+							xtype: 'hiddenfield',
+							itemId:'naturalHeight'	
+					},{
+							xtype: 'hiddenfield',
+							itemId:'ratio'	
+					}]
                 }, {
                     xtype: 'fieldset',
                     title: me.t('Style'),
