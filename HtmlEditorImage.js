@@ -69,7 +69,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         'Confirmation': '',
         'Are you sure you want to delete this image?': '',
         'Your photo has been uploaded.': '',
-		'Real Size':''
+        'Real Size': ''
     },
 
     /**
@@ -183,7 +183,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                 scope: me
             });
         }
-		 
+
         // mouse drag resize event
         if (Ext.isWebKit && me.dragResize) {
             me.flyDoc.on({
@@ -192,32 +192,32 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             });
         }
 
-		// double click on image
+        // double click on image
         me.flyDoc.on({
             dblclick: me._dblClick,
             scope: me
         });
-		
+
         // to remove custom attr
         me.flyDoc.on({
             paste: me._removeSelectionHelpers,
             scope: me
         });
-    },	
+    },
     beforeDestroy: function () {
         var me = this;
         if (me.uploadDialog) me.uploadDialog.destroy();
         me.flyDoc.un('mouseup', me._docMouseUp, me);
-		me.flyDoc.un('dblclick', me._dblClick, me);
+        me.flyDoc.un('dblclick', me._dblClick, me);
         if (me.wheelResize) me.flyDoc.un('mousewheel', me._wheelResize, me);
         if (me.dragResize) me.flyDoc.un('drag', me._dragResize, me);
         me.flyDoc.un('paste', me._removeSelectionHelpers, me);
     },
     onRender: function () {
 
-        var uploadButton = Ext.create('Ext.button.Button', {
+        var imageButton = Ext.create('Ext.button.Button', {
             iconCls: 'x-htmleditor-imageupload',
-            handler: this._uploadImage,
+            handler: this._openImageDialog,
             scope: this,
             tooltip: this.t('Insert/Edit Image'),
             overflowText: this.t('Insert/Edit Image')
@@ -226,24 +226,22 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         var toolbar = this.cmp.getToolbar();
 
         // we save a reference to this button to use it later
-        this.uploadButton = uploadButton;
+        this.imageButton = imageButton;
 
-        this.cmp.getToolbar().add(uploadButton);
+        this.cmp.getToolbar().add(imageButton);
 
     },
-	// private
-	_dblClick: function(evt)
-	{
-		var me = this;
-		var target =evt.getTarget();
-		
-		if(target.tagName == "IMG")
-		{
-			me._uploadImage()
-		}
-	},
+    // private
+    _dblClick: function (evt) {
+        var me = this;
+        var target = evt.getTarget();
+
+        if (target.tagName == "IMG") {
+            me._openImageDialog()
+        }
+    },
     //private
-    _uploadImage: function () {
+    _openImageDialog: function () {
 
         var me = this;
         var cmp = this.cmp;
@@ -308,16 +306,17 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             iframeDoc: doc,
             imageToEdit: image,
             pageSize: me.pageSize,
-            uploadButton: me.uploadButton,
+            imageButton: me.imageButton,
         });
 
         me.uploadDialog.on('close', function () {
             if (Ext.isIE) {
-                me.uploadButton.toggle(false);
+                me.imageButton.toggle(false);
                 me._removeSelectionHelpers()
             }
         }, me);
 
+		// custom event that fires when the user presses the ok button on the dialog
         me.uploadDialog.on('imageloaded', function () {
 
             var newImage = this.getImage();
@@ -355,7 +354,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
             me.imageToEdit = "";
             this.close();
-            me.uploadButton.toggle(false);
+            me.imageButton.toggle(false);
         });
 
         me.uploadDialog.loadImageDetails();
@@ -377,11 +376,11 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             var delta = e.getWheelDelta();
             var width = target.style.width ? parseInt(target.style.width.replace(/[^\d.]/g, "")) : target.width;
             var height = target.style.height ? parseInt(target.style.height.replace(/[^\d.]/g, "")) : target.height;
-			
-			target.removeAttribute('height');
-			target.style.removeProperty('height');
-			
-			// change just width to keep aspect ratio
+
+            target.removeAttribute('height');
+            target.style.removeProperty('height');
+
+            // change just width to keep aspect ratio
             target.style.width = (delta < 1) ? width - 10 : width + 10;
 
             e.preventDefault();
@@ -410,7 +409,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         me._removeSelectionHelpers();
 
         if (target.tagName == "IMG") {
-            me.uploadButton.toggle(true);
+            me.imageButton.toggle(true);
             if ((me.wheelResize || me.dragResize) && (Ext.isWebKit || Ext.isOpera)) target.setAttribute('iu_edit', '1');
             else target.setAttribute('iu_edit', '2');
 
@@ -420,7 +419,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
                 var sel = this.cmp.getWin().getSelection ? this.cmp.getWin().getSelection() : this.cmp.getWin().document.selection;
                 sel.setBaseAndExtent(target, 0, target, 1);
             }
-        } else me.uploadButton.toggle(false);
+        } else me.imageButton.toggle(false);
     }
 });
 
@@ -448,40 +447,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             panel.down('[name=src]').focus();
         }
     },
-	setPreviewImage: function(src)
-	{
-		if(!this.previewComponent)this.previewComponent = this.down('#vistaPrevia');
-		this.previewComponent.setWidth('');
-		this.previewComponent.setHeight('');
-		this.previewComponent.setSrc(src);
-	},
-	resizePreviewImage: function(evt,el)
-	{
-		var comp = this;
-		var image = el;	
-		var width, height;
-		var maxWidth = maxHeight = 124;
-		
-		if(image.src)
-		{
-			// save real image size
-			comp.up('form').down('#naturalWidth').setValue(image.width);
-			comp.up('form').down('#naturalHeight').setValue(image.height);		
-			comp.up('form').down('#ratio').setValue(image.height/image.width);		
-			comp.up('form').down('#realSize').setValue(image.width+'x'+image.height);
-			
-			if(image.width >= image.height ){
-				width = image.width < maxWidth ? image.width : maxWidth; 
-				height = Math.ceil((width/image.width)*image.height)
-			}else{
-				height = image.height < maxHeight ? image.height : maxHeight;  
-				width = Math.ceil((height/image.height)*image.width)
-			}
-			
-			comp.setWidth(width);
-			comp.setHeight(height);
-		}
-	},
     initComponent: function () {
         var me = this;
         var imageStore = Ext.create('Ext.data.Store', {
@@ -591,20 +556,21 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     margin: '0 4 0 0',
                     editable: true,
                     allowBlank: true,
-                    emptyText: '',
-                    value: '',
                     store: imageStore,
                     displayField: 'src',
                     valueField: 'src',
-					checkChangeBuffer:200,
+                    checkChangeBuffer: 200,
+					suspendChangeEvent: true,
                     listeners: {
                         expand: function (combo, options) {
                             combo.store.load(combo.store.lastOptions);
                         },
-						change: function(combo)
-						{
-							me.setPreviewImage(combo.getValue());
-						}
+                        change: function (combo) {
+                            if(combo.suspendChangeEvent){
+								combo.suspendChangeEvent = false;
+							}
+                            else me._setPreviewImage(combo.getValue(), true);
+                        }
                     },
                     listConfig: {
                         loadingText: 'Searching...',
@@ -637,7 +603,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                                             var combo = me.down('[name=src]');
                                                             combo.setValue('');
                                                             me.down('form').getForm().reset();
-															me.setPreviewImage('');
+                                                            me._setPreviewImage('');
                                                         },
                                                         failure: function (form, action) {
                                                             Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
@@ -661,25 +627,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     columnWidth: 0.30,
                     buttonText: me.t('Upload Image...'),
                     listeners: {
-                        change: function () {
-                            var form = this.up('form').getForm();
-                            if (form.isValid()) {
-                                form.submit({
-                                    url: me.submitUrl + '?action=upload',
-                                    waitMsg: me.t('Uploading your photo...'),
-                                    success: function (fp, o) {
-                                        Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
-                                        var combo = me.down('[name=src]');
-                                        combo.setRawValue(o.result.data['src']);
-										me.setPreviewImage(o.result.data['src']);
-                                    },
-                                    failure: function (form, action) {
-                                        Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
-                                        me.down('[name=photo-path]').reset();
-                                    }
-                                });
-                            }
-                        }
+                        change: me._uploadPhoto,
+						scope:me
                     }
                 }]
             }, {
@@ -699,41 +648,40 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     collapsible: true,
                     layout: 'anchor',
                     collapsed: false,
-					layout: {
-                            type: 'table',
-                            columns: 2
+                    layout: {
+                        type: 'table',
+                        columns: 2
                     },
                     defaults: {
                         anchor: '100%',
                         labelWidth: 72
                     },
-                    items: [	
-					{
-						xtype: 'container',
-						margin:4,
-						padding:1,
-						layout: {
-							align: 'middle',
-							pack: 'center',
-							type: 'hbox'
-						},
-						style: {
-							border: '1px solid #ccc',
-						},
-						height: 128,
-						width: 128,
-						items: [
-						{
-							xtype: 'image',
-							itemId: 'vistaPrevia',
-							listeners:{
-								render: function(comp){
-									var flyImg = Ext.fly(comp.getEl().dom);
-									comp.mon(flyImg, 'load',me.resizePreviewImage,comp);
-								}
-							}
-						}]
-					},{
+                    items: [{
+                        xtype: 'container',
+                        margin: 4,
+                        padding: 1,
+                        layout: {
+                            align: 'middle',
+                            pack: 'center',
+                            type: 'hbox'
+                        },
+                        style: {
+                            border: '1px solid #ccc',
+                        },
+                        height: 128,
+                        width: 128,
+                        items: [{
+                            xtype: 'image',
+                            itemId: 'vistaPrevia',
+                            resetImageSize: false,
+                            listeners: {
+                                render: function (comp) {
+                                    var flyImg = Ext.fly(comp.getEl().dom);
+                                    comp.mon(flyImg, 'load', me._resizePreviewImage, comp);
+                                }
+                            }
+                        }]
+                    }, {
                         xtype: 'fieldcontainer',
                         layout: {
                             type: 'table',
@@ -751,41 +699,28 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
                         },
                         items: [{
-							colspan:3,
-							xtype: 'combobox',
-							width:216,
-							name: 'float',
-							queryMode: 'local',
-							editable: false,
-							allowBlank: false,
-							fieldLabel: me.t('Align'),
-							value: 'left',
-							store: alignStore,
-							displayField: 'name',
-							valueField: 'value'
-						},{
+                            colspan: 3,
+                            xtype: 'combobox',
+                            width: 216,
+                            name: 'float',
+                            queryMode: 'local',
+                            editable: false,
+                            allowBlank: false,
+                            fieldLabel: me.t('Align'),
+                            value: 'left',
+                            store: alignStore,
+                            displayField: 'name',
+                            valueField: 'value'
+                        }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Width'),
                             name: 'width',
-							minValue:1,
-							maxValue:9999,
-							listeners:{
-								change: function(combo, newValue, oldValue)
-								{
-									var height = me.down('[name=height]');
-									if(!newValue || !height.getValue())return;
-									if(newValue <= 0 ){
-										combo.setRawValue(oldValue);
-										return;					
-									}
-									if(me.down('#constraintProp').pressed)
-									{
-										var ratio = combo.up('form').down('#ratio').getValue();
-										var val = ratio > 1 ? newValue/ratio : ratio*newValue;
-										height.setRawValue(Math.round( ( val) ));									
-									}
-								}
-							}
+                            minValue: 1,
+                            maxValue: 9999,
+							constrainName:'height',
+                            listeners: {
+                                change: me._checkConstrain
+                            }
                         }, {
                             xtype: 'combobox',
                             name: 'widthUnits',
@@ -799,61 +734,32 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             store: unitsStore,
                             displayField: 'name',
                             valueField: 'value'
-                        },{
-							rowspan:2,
-							xtype:'button',
-							itemId:'constraintProp',
-							cls:'x-htmleditor-imageupload-constrain',
-							enableToggle:true,
-							pressed:false,
-							style:{
-								border:'0px',
-							},
-							width:24,
-							height:50,
-							listeners:{ 
-								click:function(btn)
-								{
-									if(!btn.pressed){
-										btn.removeCls('x-htmleditor-imageupload-constrain');
-										btn.addCls('x-htmleditor-imageupload-unconstrain');
-									}
-									else{
-										btn.removeCls('x-htmleditor-imageupload-unconstrain');
-										btn.addCls('x-htmleditor-imageupload-constrain');
-										
-										me.down('[name=width]').setRawValue( me.down('#naturalWidth').getValue());
-										me.down('[name=height]').setRawValue( me.down('#naturalHeight').getValue());
-									}
-								},
-								render: function(btn)
-								{
-									btn.toggle(true);
-								}
-							}
-						}, {
+                        }, {
+                            rowspan: 2,
+                            xtype: 'button',
+                            itemId: 'constraintProp',
+                            cls: 'x-htmleditor-imageupload-constrain',
+                            enableToggle: true,
+                            pressed: true,
+                            style: {
+                                border: '0px',
+                            },
+                            width: 24,
+                            height: 50,
+                            listeners: {
+                                toggle: me._toggleConstrain,
+								scope:me
+                            }
+                        }, {
                             xtype: 'numberfield',
                             fieldLabel: me.t('Height'),
                             name: 'height',
-							minValue:1,
-							maxValue:9999,
-							listeners:{
-								change: function(combo, newValue, oldValue)
-								{
-									var width = me.down('[name=width]');		
-									if(!newValue || ! width.getValue())return;
-									if(newValue <= 0 ){
-										combo.setRawValue(oldValue);
-										return;					
-									}
-									if(me.down('#constraintProp').pressed){
-										
-										var ratio = combo.up('form').down('#ratio').getValue();
-										var val = ratio <= 1 ? newValue/ratio : ratio*newValue;
-										width.setRawValue(Math.round( (val)  ));
-									}
-								}
-							}
+                            minValue: 1,
+                            maxValue: 9999,
+							constrainName:'width',
+                            listeners: {
+                                change: me._checkConstrain
+                            }
                         }, {
                             xtype: 'combobox',
                             name: 'heightUnits',
@@ -867,22 +773,22 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             store: unitsStore,
                             displayField: 'name',
                             valueField: 'value'
-                        },{
-							colspan:3,
-							xtype:'displayfield',
-							fieldLabel:'Real Size',
-							itemId:'realSize'
-						}]
-                    },{
-							xtype: 'hiddenfield',
-							itemId:'naturalWidth'
-					},{
-							xtype: 'hiddenfield',
-							itemId:'naturalHeight'	
-					},{
-							xtype: 'hiddenfield',
-							itemId:'ratio'	
-					}]
+                        }, {
+                            colspan: 3,
+                            xtype: 'displayfield',
+                            fieldLabel: 'Real Size',
+                            itemId: 'realSize'
+                        }]
+                    }, {
+                        xtype: 'hiddenfield',
+                        itemId: 'naturalWidth'
+                    }, {
+                        xtype: 'hiddenfield',
+                        itemId: 'naturalHeight'
+                    }, {
+                        xtype: 'hiddenfield',
+                        itemId: 'ratio'
+                    }]
                 }, {
                     xtype: 'fieldset',
                     title: me.t('Style'),
@@ -1145,11 +1051,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 cssFloat = image.style.cssFloat ? image.style.cssFloat : 'none';
             }
 
-
             var values = {
                 'display': image.style.display ? image.style.display : '',
-                'width': image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width,
-                'height': image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height,
                 'widthUnits': image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
                 'display': image.style.display ? image.style.display : '',
                 'widthUnits': image.style.width ? image.style.width.replace(/[\d.]/g, "") : 'px',
@@ -1172,12 +1075,21 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 'marginRightUnits': image.style.marginRight ? image.style.marginRight.replace(/[\d.]/g, "") : 'px',
                 'title': image.title,
                 'className': image.className.replace("x-htmleditor-imageupload-bordeResize", "").replace("x-htmleditor-imageupload-bordeSelect", ""),
-                'src': image.src,
                 'float': cssFloat
             };
 
             this.down('form').getForm().setValues(values);
-            this.down('[name=src]').setRawValue(values['src']);
+
+            // I do this here because I dont want to fire the change events
+			// In IE 8 combobox change event is fired even with setRawValue. Bug?
+			this.down('[name=src]').setRawValue(image.src);
+			
+            this.down('[name=width]').setRawValue(image.style.width ? image.style.width.replace(/[^\d.]/g, "") : image.width);
+            this.down('[name=height]').setRawValue(image.style.height ? image.style.height.replace(/[^\d.]/g, "") : image.height);
+
+            // show the image preview
+            this._setPreviewImage(image.src, false);
+
             this.down('#fieldOptions').expand();
         } else this.down('#fieldOptions').collapse();
     },
@@ -1212,5 +1124,102 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         image.removeAttribute("height");
 
         return image;
+    },
+	_toggleConstrain:function (btn) {
+		var me = this;
+		if (!btn.pressed) {
+			btn.removeCls('x-htmleditor-imageupload-constrain');
+			btn.addCls('x-htmleditor-imageupload-unconstrain');
+		} else {
+			btn.removeCls('x-htmleditor-imageupload-unconstrain');
+			btn.addCls('x-htmleditor-imageupload-constrain');
+
+			me.down('[name=width]').setRawValue(me.down('#naturalWidth').getValue());
+			me.down('[name=height]').setRawValue(me.down('#naturalHeight').getValue());
+		}
+	},
+	_uploadPhoto:function (fileField) {
+		
+		var me = this;
+		
+		var form = fileField.up('form').getForm();
+		if (form.isValid()) {
+			form.submit({
+				url: me.submitUrl + '?action=upload',
+				waitMsg: me.t('Uploading your photo...'),
+				success: function (fp, o) {
+					Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
+					var combo = me.down('[name=src]');
+					combo.setRawValue(o.result.data['src']);
+					me._setPreviewImage(o.result.data['src'],true);
+				},
+				failure: function (form, action) {
+					Ext.Msg.alert(me.t('Error'), 'Error: ' + action.result.errors);
+					me.down('[name=photo-path]').reset();
+				}
+			});
+		}
+	},
+	_checkConstrain: function (combo, newValue, oldValue) {
+		var sizeField = combo.up('form').down('[name='+combo.constrainName+']');
+		if (!newValue || !sizeField.getValue()) return;
+		if (newValue <= 0) {
+			combo.setRawValue(oldValue);
+			return;
+		}
+		if (combo.up('form').down('#constraintProp').pressed) {
+			var ratio = combo.up('form').down('#ratio').getValue();
+			var val = ratio > 1 ? newValue / ratio : ratio * newValue;
+			sizeField.setRawValue(Math.round((val)));
+		}
+	},
+    _setPreviewImage: function (src, resetImageSize) {
+        if (!this.previewComponent) this.previewComponent = this.down('#vistaPrevia');
+        this.previewComponent.setWidth('');
+        this.previewComponent.setHeight('');
+
+		this.down('#vistaPrevia').resetImageSize = resetImageSize;
+        // when I change the src the _resizePreviewImage method will be fired.
+        // It happens because _resizePreviewImage is attached to the image onload event
+        this.previewComponent.setSrc(src);
+    },
+    _resizePreviewImage: function (evt, el) {
+        var width, height;
+        var comp = this;
+        var myForm = comp.up('form');
+        var image = el;
+        var maxWidth = maxHeight = 124;
+        var constrainComp = myForm.down('#constraintProp');
+        var widthComp = myForm.down('[name=width]');
+        var heightComp = myForm.down('[name=height]')
+
+
+        // save real image size
+        myForm.down('#naturalWidth').setValue(image.width);
+        myForm.down('#naturalHeight').setValue(image.height);
+        myForm.down('#ratio').setValue(image.height / image.width);
+        myForm.down('#realSize').setValue(image.width + 'x' + image.height);
+
+        if (comp.resetImageSize === true) {
+            widthComp.setRawValue(image.width);
+            heightComp.setRawValue(image.height);
+            myForm.down('[name=widthUnits]').setRawValue('px');
+            myForm.down('[name=heightUnits]').setRawValue('px');
+            constrainComp.toggle(true);
+        } else {
+            // toggle off constrain button if image ratio is different
+            if (widthComp.getValue() / heightComp.getValue() != image.width / image.height) constrainComp.toggle(false);
+        }
+
+        if (image.width >= image.height) {
+            width = image.width < maxWidth ? image.width : maxWidth;
+            height = Math.ceil((width / image.width) * image.height)
+        } else {
+            height = image.height < maxHeight ? image.height : maxHeight;
+            width = Math.ceil((height / image.height) * image.width)
+        }
+
+        comp.setWidth(width);
+        comp.setHeight(height);
     }
 });
