@@ -562,13 +562,19 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     store: imageStore,
                     displayField: 'src',
                     valueField: 'src',
+					needsRefresh: false,
                     checkChangeBuffer: 500,
                     listeners: {
                         expand: function (combo, options) {
-                            //combo.store.load(combo.store.lastOptions);
+							// I have to do this here because if I do store.load after Image Upload or Image Delete, the paging toolbar disappears.
+                            if(combo.needsRefresh) {
+								combo.store.currentPage = 1; 
+								combo.store.load({start:0,limit:me.pageSize,page:1})
+							}
+							else combo.needsRefresh = false;
                         },
                         change: function (combo, oldValue, newValue) {
-						   // in ie8 sometimes this event is fired and I dont know why.
+						   // in ie8 sometimes this event is fired and I dont know why. So if newValue is not defined I just ignore it.
 						   if(newValue == undefined)return;
 						   me._setPreviewImage(combo.getValue(), true);
                         },
@@ -580,18 +586,12 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     listConfig: {
                         loadingText: 'Searching...',
                         emptyText: 'No matching posts found.',
-
-                        // Custom rendering template for each item
-                        //getInnerTpl: function () {
-                            //return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
-							//return '<table  class="x-boundlist-item" style="width:60px;float:left"><tr><td style="width:32px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><img src="{src}" style="width:64px;height:64px"/></td></tr><tr><td colspan="2">{name}</td></tr></table>';
-                        //},
                         listeners: {
                             el: {
                                 click: {
                                     delegate: 'a.x-htmleditor-imageupload-delete',
-                                    fn: function (ev, a) {
-                                        Ext.Msg.show({
+                                    fn: function (ev, a) {					
+										Ext.Msg.show({
                                             title: me.t('Confirmation'),
                                             msg: me.t('Are you sure you want to delete this image?'),
                                             buttons: Ext.Msg.YESNO,
@@ -606,7 +606,14 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                                                             'image': a.getAttribute('img_fullname')
                                                         },
                                                         success: function (fp, o) {
-                                                            var combo = me.down('[name=src]');
+                                                            
+															// delete the image from the list
+															var combo = me.down('[name=src]');
+															
+															//if I do here a combo.store.load() to refresh, the paging toolbar disappears
+															// so I'll do it on combo expand event
+															combo.needsRefresh = true;
+										
                                                             combo.setValue('');
                                                             me.down('form').getForm().reset();
                                                             me._setPreviewImage('blank',true);
@@ -1160,6 +1167,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 				success: function (fp, o) {
 					Ext.Msg.alert('Success', me.t('Your photo has been uploaded.'));
 					var combo = me.down('[name=src]');
+					combo.needsRefresh = true;
 					combo.setRawValue(o.result.data['src']);
 					me._setPreviewImage(o.result.data['src'],true);
 				},
