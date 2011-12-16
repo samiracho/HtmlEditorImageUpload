@@ -18,7 +18,8 @@ if(isset($_REQUEST['action']))
 		case 'imagesList':
 			$limit         = isset($_REQUEST["limit"])?intval($_REQUEST["limit"]):10;
 			$start         = isset($_REQUEST["start"])?intval($_REQUEST["start"]):0;
-			print_r(json_encode( getImages($imagesPath, $imagesUrl, $allowedFormats, $start, $limit) ));
+			$query         = isset($_REQUEST["query"])?$_REQUEST["query"]:0;
+			print_r(json_encode( getImages($imagesPath, $imagesUrl, $allowedFormats, $start, $limit, $query) ));
 		break;
 		
 		case 'delete':
@@ -128,7 +129,7 @@ function deleteImage($imagesPath, $image = null)
 	}
 }
 
-function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit = 10)
+function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit = 10,$query ="")
 {
 	// array to hold return value
 	$results = array();
@@ -142,10 +143,13 @@ function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit 
 		$ext =  strtolower( substr($file, strpos($file,'.'), strlen($file)-1) );
 
 		if(in_array($ext,explode(',', $allowedFormats)))
-		{
-			$resume = strlen ( $file ) > 18 ?  substr($file,0, 18).'...' : $file;
+		{		
+			$resume = strlen ( $file ) > 18 ?  substr($file,0, 12).'...' : $file;
 			if ($file != "." && $file != "..") {
-				$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file);
+				
+				if( $query == "" || ($query != "" && stripos($file,$query)!== false) ){
+					$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file);
+				}
 			}
 		}
     }

@@ -89,9 +89,9 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
     /**
      * @cfg {integer} pageSize
      * Number of images to show on the list.
-     * Default 4
+     * Default 6
      */
-    pageSize: 4,
+    pageSize: 6,
 
 /**
    * @cfg {Boolean} values are:
@@ -283,7 +283,10 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             if (range.endOffset - range.startOffset < 2) {
                 if (range.startContainer.hasChildNodes()) {
                     var r = range.startContainer.childNodes[range.startOffset];
-                    if (r.tagName == "IMG") image = r;
+                    if(r.tagName)
+					{
+						if (r.tagName == "IMG") image = r;
+					}
                 }
             }
         }
@@ -430,7 +433,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     submitUrl: null,
     managerUrl: null,
     iframeDoc: null,
-    pageSize: 4,
+    pageSize: null,
     imageToEdit: '',
     closeAction: 'destroy',
     width: 460,
@@ -549,7 +552,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 items: [{
                     xtype: 'combobox',
                     name: 'src',
-                    queryMode: 'local',
+                    queryMode: 'remote',
                     fieldLabel: 'Url',
                     labelWidth: 50,
                     columnWidth: 0.70,
@@ -562,22 +565,27 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     checkChangeBuffer: 500,
                     listeners: {
                         expand: function (combo, options) {
-                            combo.store.load(combo.store.lastOptions);
+                            //combo.store.load(combo.store.lastOptions);
                         },
                         change: function (combo, oldValue, newValue) {
 						   // in ie8 sometimes this event is fired and I dont know why.
 						   if(newValue == undefined)return;
 						   me._setPreviewImage(combo.getValue(), true);
+                        },
+						select: function (combo) {
+						   me._setPreviewImage(combo.getValue(), true);
                         }
                     },
+					tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><img src="{src}" style="width:64px;height:64px"/></td></tr><tr><td colspan="2" style="text-align:center">{name}</td></tr></table></tpl>',
                     listConfig: {
                         loadingText: 'Searching...',
                         emptyText: 'No matching posts found.',
 
                         // Custom rendering template for each item
-                        getInnerTpl: function () {
-                            return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
-                        },
+                        //getInnerTpl: function () {
+                            //return '<img class="x-htmleditor-imageupload-thumb" src="{src}" /><div class="x-htmleditor-imageupload-name">{name}</div><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a>';
+							//return '<table  class="x-boundlist-item" style="width:60px;float:left"><tr><td style="width:32px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><img src="{src}" style="width:64px;height:64px"/></td></tr><tr><td colspan="2">{name}</td></tr></table>';
+                        //},
                         listeners: {
                             el: {
                                 click: {
@@ -1202,11 +1210,12 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
 		
         if (comp.resetImageSize == true) {
-            widthComp.setRawValue(image.width);
+            constrainComp.toggle(false);
+			widthComp.setRawValue(image.width);
             heightComp.setRawValue(image.height);
             myForm.down('[name=widthUnits]').setRawValue('px');
             myForm.down('[name=heightUnits]').setRawValue('px');
-            constrainComp.toggle(true);
+
         } else {
             // toggle off constrain button if image ratio is different
             if (widthComp.getValue() / heightComp.getValue() != image.width / image.height) constrainComp.toggle(false);
