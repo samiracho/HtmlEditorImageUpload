@@ -4,7 +4,7 @@
  *
  * @author    Sami Racho
  * @date      December 2011
- * @version   0.1
+ * @version   0.3
  *
  * @license Ext.ux.form.HtmlEditor.imageUpload is licensed under the terms of
  * the Open Source LGPL 3.0 license.  Commercial use is permitted to the extent
