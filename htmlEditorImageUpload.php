@@ -1,35 +1,39 @@
 <?php
 
 // change these parameters to fit your server config
-$allowedFormats = ".jpg,.jpeg,.gif,.png";								// Allowed image formats
-$maxSize        = "1024000"; 											// Max image size. 10485760 = 10MB
-$imagesPath     = "uploads/"; 											// path where the files will be uploaded to the server
-$imagesUrl      = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/"; 	// url to the images
-
+$allowedFormats    = ".jpg,.jpeg,.gif,.png";								// Allowed image formats
+$maxSize           = "1024000"; 											// Max image size. 10485760 = 10MB
+$imagesPath        = "uploads/"; 											// path where the files will be uploaded to the server
+$imagesThumbsPath  = "uploads/thumbs/"; 											// path where the image thumbs will be uploaded to the server
+$imagesTumbsUrl    = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/thumbs/";
+$imagesUrl         = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/"; 	// url to the images
+//$imagesTumbsUrl    = "http://localhost/HtmlEditorImageUpload/uploads/thumbs/";
+//$imagesUrl         = "http://localhost/HtmlEditorImageUpload/uploads/"; 	// url to the images
+$createThumbnails  = true;
 
 if(isset($_REQUEST['action']))
 {
 	switch($_REQUEST['action'])
 	{
 		case 'upload':		
-			print_r( json_encode( uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl) ) );
+			print_r( json_encode( uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$createThumbnails,$imagesTumbsUrl,$imagesThumbsPath) ) );
 		break;
 		
 		case 'imagesList':
 			$limit         = isset($_REQUEST["limit"])?intval($_REQUEST["limit"]):10;
 			$start         = isset($_REQUEST["start"])?intval($_REQUEST["start"]):0;
 			$query         = isset($_REQUEST["query"])?$_REQUEST["query"]:0;
-			print_r(json_encode( getImages($imagesPath, $imagesUrl, $allowedFormats, $start, $limit, $query) ));
+			print_r(json_encode( getImages($imagesPath, $imagesUrl,$imagesTumbsUrl,$imagesThumbsPath, $allowedFormats, $start, $limit, $query) ));
 		break;
 		
 		case 'delete':
 			$image         = isset($_REQUEST["image"]) ? stripslashes($_REQUEST["image"]):"";
-			print_r( json_encode( deleteImage($imagesPath, $image) ));
+			print_r( json_encode( deleteImage($imagesPath,$imagesThumbsPath, $image) ));
 		break;
 	}
 }
 
-function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl)
+function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$createThumbnails=false,$imagesTumbsUrl,$imagesThumbsPath)
 {	
 	global $_FILES;
 	$result = array();
@@ -84,6 +88,24 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl)
 
 	if(move_uploaded_file($_FILES['photo-path']['tmp_name'],$imagesPath.$nombreArchivo))
 	{		
+		if($createThumbnails && $ext!=".gif")
+		{
+			// create the thumbnail
+			require_once 'easyphpthumbnail.class.php';
+				
+			$thumb = new easyphpthumbnail;
+
+			// Set thumbsize - automatic resize for landscape or portrait
+			$thumb -> Thumbsize = 64;
+			$thumb -> Square = true;
+			$thumb -> Cropimage = array(3,0,0,0,0,0);
+			//$thumb -> Backgroundcolor = '#D0DEEE';
+			//$thumb -> Shadow = true;
+			$thumb -> Thumblocation = $imagesThumbsPath;
+			$thumb -> Thumbsaveas = 'jpg';
+			$thumb -> Createthumb($imagesPath.$nombreArchivo,'file');
+		}
+		
 		$result= array(
             'success'	=> true,
             'message'	=> 'Image Uploaded Successfully',
@@ -105,10 +127,16 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl)
 	return $result;
 }
 
-function deleteImage($imagesPath, $image = null)
+function deleteImage($imagesPath,$imagesThumbsPath, $image = null)
 {
-	if(file_exists($imagesPath.$image) && unlink($imagesPath.$image))
+	if(file_exists($imagesPath.$image))
 	{
+		// remove image
+		unlink($imagesPath.$image);
+		 
+		// remove thumbnail if exists
+		if(file_exists($imagesThumbsPath.$image))unlink($imagesThumbsPath.$image);
+		
 		return array(
 			'success'	=> true,
 			'message'	=> 'Success',
@@ -129,7 +157,7 @@ function deleteImage($imagesPath, $image = null)
 	}
 }
 
-function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit = 10,$query ="")
+function getImages($imagesPath, $imagesUrl,$imagesTumbsUrl,$imagesThumbsPath, $allowedFormats, $start = 0, $limit = 10,$query ="")
 {
 	// array to hold return value
 	$results = array();
@@ -148,7 +176,9 @@ function getImages($imagesPath, $imagesUrl, $allowedFormats, $start = 0, $limit 
 			if ($file != "." && $file != "..") {
 				
 				if( $query == "" || ($query != "" && stripos($file,$query)!== false) ){
-					$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file);
+					
+					$thumbSrc = file_exists($imagesThumbsPath.$file) ? $imagesTumbsUrl.$file : $imagesUrl.$file;
+					$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file,'thumbSrc'=>$thumbSrc);
 				}
 			}
 		}

@@ -5,7 +5,7 @@
  *
  * @author    Sami Racho
  * @date      December 2011
- * @version   0.1
+ * @version   0.3
  *
  * @license Ext.ux.form.HtmlEditor.imageUpload is licensed under the terms of
  * the Open Source LGPL 3.0 license.  Commercial use is permitted to the extent
@@ -124,7 +124,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
    * 
    */
     wheelResize: true,
-
+	
     /**
      * @cfg {String} iframeCss
      * Path to the iframe css file. 
@@ -152,30 +152,17 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         me.flyDoc = Ext.fly(cmpDoc);
 
         // Inject custom css file to iframe's head in order to simulate image control selector on click, over webKit and Opera browsers
-        if ((Ext.isWebKit || Ext.isOpera)) {
+        if ((Ext.isWebKit || Ext.isOpera)) me._injectCss(me.cmp, me.iframeCss);
 
-            var frameName = me.cmp.iframeEl.dom.name;
-            var iframe;
-
-            if (document.frames) iframe = document.frames[frameName];
-            else iframe = window.frames[frameName];
-
-            // we have to add our custom css file to the iframe
-            var ss = iframe.document.createElement("link");
-            ss.type = "text/css";
-            ss.rel = "stylesheet";
-            ss.href = me.iframeCss;
-
-            if (document.all) iframe.document.createStyleSheet(ss.href);
-            else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
-        }
-
+		// attach context menu
+		me._contextMenu();
+		
         // attach event to control when the user clicks on image
         me.flyDoc.on({
             mouseup: me._docMouseUp,
             scope: me
         });
-
+		
         // mousewheel resize event
         if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
             me.flyDoc.on({
@@ -212,6 +199,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         if (me.wheelResize) me.flyDoc.un('mousewheel', me._wheelResize, me);
         if (me.dragResize) me.flyDoc.un('drag', me._dragResize, me);
         me.flyDoc.un('paste', me._removeSelectionHelpers, me);
+		if(me.contextMenu)contextMenu.destroy();
     },
     onRender: function () {
 
@@ -231,6 +219,71 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         this.cmp.getToolbar().add(imageButton);
 
     },
+	_contextMenu: function()
+	{
+		var me = this;
+		
+		if(!me.contextMenu)
+		{
+			var editAction = Ext.create('Ext.Action', {
+					text: me.t('Edit'),
+					iconCls: 'x-htmleditor-imageupload-editbutton',
+					disabled: false,
+					handler:me._openImageDialog,
+					scope: me
+				}
+			);
+			
+			var deleteAction = Ext.create('Ext.Action', {
+				iconCls: 'x-htmleditor-imageupload-deletebutton',
+				text: me.t('Delete'),
+				disabled: false,
+				handler: function(){me.cmp.execCmd('delete')}
+			});
+
+			var contextMenu = Ext.create('Ext.menu.Menu', {
+				closeAction:'hide',
+				items: [
+					editAction,
+					deleteAction
+				]
+			});
+			me.contextMenu = contextMenu;
+		}
+		
+		me.flyDoc.on({
+            contextmenu: function(e, htmlEl){
+					e.stopEvent();
+					e.stopPropagation();
+					var iframePos = this.cmp.getPosition();
+					var elementPos = e.getXY();
+					var pos =[iframePos[0]+elementPos[0],iframePos[1]+elementPos[1]];
+					if(e.getTarget().tagName == 'IMG');Ext.Function.defer(function(){me.contextMenu.showAt(pos)}, 100);
+					
+				},
+            scope: me
+        });
+	},
+	//private
+	// instead of overriding the htmleditor header method we just append another css file to it's iframe head
+	_injectCss: function(cmp, cssFile)
+	{
+		var frameName = cmp.iframeEl.dom.name;
+        var iframe;
+
+		if (document.frames) iframe = document.frames[frameName];
+		else iframe = window.frames[frameName];
+
+		// we have to add our custom css file to the iframe
+		var ss = iframe.document.createElement("link");
+		ss.type = "text/css";
+		ss.rel = "stylesheet";
+		ss.href = cssFile;
+
+		if (document.all) iframe.document.createStyleSheet(ss.href);
+		else iframe.document.getElementsByTagName("head")[0].appendChild(ss);
+	
+	},
     // private
     _dblClick: function (evt) {
         var me = this;
@@ -392,13 +445,11 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
         var target = e.getTarget();
 
-        if (target.tagName == "IMG" && target.getAttribute('iu_edit') == 1) {
-
-            var width = e.getX() - target.offsetLeft;
+        if (target.tagName == "IMG" && ( target.getAttribute('iu_edit') == 1 ) ) {
+			var width = e.getX() - target.offsetLeft;
             var height = e.getY() - target.offsetTop;
             target.style.width = width + "px";
-            target.style.height = height + "px";
-
+			target.style.height = height + "px";
             e.preventDefault();
         } else return;
     },
@@ -448,7 +499,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 			// we force the focus on the dialog window to avoid control artifacts on IE
 			this._loadImageDetails();
             panel.down('[name=src]').focus();
-        }
+        },
+		resize: function(panel){
+			panel.center();
+		}
     },
     initComponent: function () {
         var me = this;
@@ -461,6 +515,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 type: 'string'
             }, {
                 name: 'src',
+                type: 'string'
+            }, {
+                name: 'thumbSrc',
                 type: 'string'
             }],
             proxy: {
@@ -582,7 +639,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 						   me._setPreviewImage(combo.getValue(), true);
                         }
                     },
-					tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><img src="{src}" style="width:64px;height:64px"/></td></tr><tr><td colspan="2" style="text-align:center">{name}</td></tr></table></tpl>',
+					tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center">{name}</td></tr></table></tpl>',
                     listConfig: {
                         loadingText: 'Searching...',
                         emptyText: 'No matching posts found.',
@@ -1006,8 +1063,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             value: 'px',
                             store: unitsStore,
                             displayField: 'name',
-                            valueField: 'value',
-                            margin: '0'
+                            valueField: 'value'
                         }]
                     }]
                 }]
