@@ -1244,6 +1244,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 		if (combo.up('form').down('#constraintProp').pressed) {
 			var ratio = combo.up('form').down('#ratio').getValue();
 			var val = ratio > 1 ? newValue / ratio : ratio * newValue;
+			// if I dont suspendEvents IE 8 fires change event and this function enters in a loop
+			sizeField.suspendEvents();
 			sizeField.setRawValue(Math.round((val)));
 		}
 	},
@@ -1274,7 +1276,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
 		
         if (comp.resetImageSize == true) {
-            constrainComp.toggle(false);
+            //constrainComp.toggle(false);
 			widthComp.setRawValue(image.width);
             heightComp.setRawValue(image.height);
             myForm.down('[name=widthUnits]').setRawValue('px');
@@ -1282,7 +1284,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 
         } else {
             // toggle off constrain button if image ratio is different
-            if (widthComp.getValue() / heightComp.getValue() != image.width / image.height) constrainComp.toggle(false);
+			
+			
+            if (Math.round(widthComp.getValue() / heightComp.getValue()) != Math.round(image.width / image.height)) constrainComp.toggle(false);
         }
 
         if (image.width >= image.height) {
