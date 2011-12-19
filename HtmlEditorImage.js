@@ -510,14 +510,16 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 	naturalHeight:0,
 	maxWidth:700,
 	maxHeight:500,
+	height:350,
+	width:400,
 	minHeight:350,
 	minWidth:400,
 	myResizer:null,
 	managerUrl:null,
 	autoScroll:true,
 	initComponent: function () {
-		var me = this;
-			
+		
+		var me = this;		
 		
 		Ext.applyIf(me, {
             items: [
@@ -530,10 +532,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 					itemId:'imageToCrop',
 					src: me.imgSrc,
 					listeners: {
-						afterrender: function (comp) {
-							var flyImg = Ext.fly(comp.getEl().dom);
-							comp.mon(flyImg, 'load', me._setupResizer, comp);
-						}
+						afterrender: me._attachOnLoadEvent,
+						scope:me
 					}
 				}
             ],
@@ -552,12 +552,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 							maxValue:200,
                             fieldLabel: 'Zoom',
 							listeners:{
-								change:function(slider)
-								{
-									var imgToCrop = me.down('#imageToCrop');
-									var zoom = Math.round(me.naturalWidth*(slider.getValue()/100));
-									imgToCrop.setWidth(zoom);
-								},
+								change:me._sliderChange,
 								scope:me
 							}
                         }
@@ -581,9 +576,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
                         'margin-right': '8px'
                     },
                     text: 'OK',
-                    handler: function () {
-                        me._cropImage();
-                    },
+                    handler: me._cropImage,
                     scope: me
                 }]
             }]
@@ -592,6 +585,24 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
         me.callParent(arguments);
         me.setTitle('Crop Image');
 	},
+	
+	//private
+	_attachOnLoadEvent: function (comp) {
+		var me = this;
+		var flyImg = Ext.fly(comp.getEl().dom);
+		comp.mon(flyImg, 'load', me._setupResizer, comp);
+	},
+	
+	//private
+	_sliderChange: function(slider)
+	{
+		var me = this;
+		var imgToCrop = me.down('#imageToCrop');
+		var zoom = Math.round(me.naturalWidth*(slider.getValue()/100));
+		imgToCrop.setWidth(zoom);
+	},
+	
+	//private
 	_setupResizer: function(ev,el)
 	{		
 		var imageComp = this;
@@ -616,6 +627,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 			pinned: true
 		});
 	},
+	
 	//private
 	//method to crop the image
     _cropImage: function (fileField) {
@@ -656,11 +668,9 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 					});
 				}
 			}
-		});
-		
-    },
+		});	
+    }
 });
-	
 
 Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
     extend: 'Ext.window.Window',
@@ -808,26 +818,16 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     needsRefresh: false,
                     checkChangeBuffer: 500,
                     listeners: {		
-                        expand: function (combo, options) {
-                            // I have to do this here because if I do store.load after Image Upload or Image Delete, the paging toolbar disappears.
-                            if (combo.needsRefresh) {
-                                combo.store.currentPage = 1;
-                                combo.store.load({
-                                    start: 0,
-                                    limit: me.pageSize,
-                                    page: 1
-                                })
-                            } else combo.needsRefresh = false;
-                        },
-                        change: function (combo, oldValue, newValue) {
-                            // in ie8 sometimes this event is fired and I dont know why. So if newValue is not defined I just ignore it.
-                            if (newValue == undefined) return;
-                            me._setPreviewImage(combo.getValue(), true);
-                        },
-                        select: function (combo) {
-                            me._setPreviewImage(combo.getValue(), true);
-                        }
-                    },
+                        'expand': me._comboExpand,
+                        'change': {
+							fn: me._comboChange,
+							scope: me
+						},
+						'select':{
+							fn: me._comboSelect,
+							scope: me
+						}
+					},
                     tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center">{name}</td></tr></table></tpl>',
                     listConfig: {
                         loadingText: 'Searching...',
@@ -902,10 +902,8 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							id:'',
                             resetImageSize: false,
                             listeners: {
-                                afterrender: function (comp) {
-                                    var flyImg = Ext.fly(comp.getEl().dom);
-                                    comp.mon(flyImg, 'load', me._resizePreviewImage, comp);
-                                }
+                                afterrender: me._attachOnLoadEvent,
+								scope: me
                             }
                         }]
                     }, {
@@ -1018,34 +1016,33 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							iconCls:'x-htmleditor-imageupload-cropbutton',
 							itemId:'cropButton',
 							disabled:true,
-							handler: me.openCropDialog,
-							scope:me
+							handler: me._openCropDialogClick,
+							scope:me,
+							tooltip:'Open crop window'
 						},{
 							xtype:'button',
 							itemId:'rotateButton',
 							disabled:true,
 							iconCls:'x-htmleditor-imageupload-rotatebutton',
-							handler: function()
-							{
-								me._serverAction({action:'rotate',image:me.down('[name=src]').getValue()});
-							},
-							scope:me
+							handler: me._rotateImageClick,
+							scope:me,
+							tooltip:'Rotate image 90º'
 						},{
 							xtype:'button',
 							itemId:'resizeButton',
 							disabled:true,
-							iconCls:'x-htmleditor-imageupload-resizebutton'
+							iconCls:'x-htmleditor-imageupload-resizebutton',
+							handler: me._resizeImageClick,
+							scope:me,
+							tooltip:'Resize Image'
 						},{
 							xtype:'button',
 							itemId:'deleteButton',
 							disabled:true,
 							iconCls:'x-htmleditor-imageupload-deletebutton',
-							handler: function(){
-								var src = me.down('[name=src]').getValue();
-								var imageName = src.substring(src.lastIndexOf('/')+1);
-								me._deleteImage(null,imageName); 
-							},
-							scope:me
+							handler: me._deleteImageClick,
+							scope:me,
+							tooltip:'Delete Image from server'
 						}]
 					},{
                         xtype: 'hiddenfield',
@@ -1254,7 +1251,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     }]
                 }]
             }],
-		dockedItems: [{
+			dockedItems: [{
                 xtype: 'container',
                 dock: 'bottom',
                 padding: 4,
@@ -1281,15 +1278,11 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 }]
             }]
         }];
-        me.keys = [{
-            key: [Ext.EventObject.ENTER],
-            handler: function () {
-                me.onSearchClick
-            }
-        }];
+		
         me.callParent(arguments);
         me.setTitle(me.t('Insert/Edit Image'));
     },
+	
 	/**
      * Returns the current image with all the data specified in the form. (Size, borders, padding e.t.c)
      * @return {HTMLImageObject} 
@@ -1327,6 +1320,36 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         return image;
     },
 	
+	//private
+	_comboExpand: function (combo, options) {
+		// I have to do this here because if I do store.load after Image Upload or Image Delete, the paging toolbar disappears.
+		if (combo.needsRefresh) {
+			combo.store.currentPage = 1;
+			combo.store.load({
+				start: 0,
+				limit: me.pageSize,
+				page: 1
+			})
+		} else combo.needsRefresh = false;
+	},
+	
+	//private
+	_comboChange: function (combo, oldValue, newValue) {
+		// in ie8 sometimes this event is fired and I dont know why. So if newValue is not defined I just ignore it.
+		if (newValue == undefined) return;
+		this._setPreviewImage(combo.getValue(), true);
+	},
+	
+	//private
+	_comboSelect: function(combo){
+		this._setPreviewImage(combo.getValue(), true);
+	},
+	
+	//private
+	_attachOnLoadEvent: function (comp) {
+		var flyImg = Ext.fly(comp.getEl().dom);
+		comp.mon(flyImg, 'load', this._resizePreviewImage, comp);
+	},
 	
 	//private
 	// loads the selected image info into the form
@@ -1477,6 +1500,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         }
     },
 	
+	//private
 	_serverAction: function (params) {
 
         var me = this;
@@ -1503,7 +1527,49 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 		});
 	},
 	
-	openCropDialog: function()
+	//private
+	_rotateImageClick: function(){
+		var me = this;
+		me._serverAction({
+			action:'rotate',
+			image: me.down('[name=src]').getValue()
+		});
+	},
+	
+	//private
+	_resizeImageClick: function(){
+		var me = this;
+		var width = me.down('[name=width]').getValue();
+		var height = me.down('[name=height]').getValue();
+		
+		Ext.Msg.show({
+			title: me.t('Confirmation'),
+			msg: me.t('Image will be permanently resized to: ')+width+'x'+height+' px',
+			buttons: Ext.Msg.YESNO,
+			closable: false,
+			fn: function (btn) {
+				if (btn == 'yes') {
+						me._serverAction({
+						action:'resize',
+						image: me.down('[name=src]').getValue(),
+						width: width,
+						height: height
+					});			
+				}
+			}
+		});	
+	},
+	
+	//private
+	_deleteImageClick: function(){
+		var me = this;
+		var src = me.down('[name=src]').getValue();
+		var imageName = src.substring(src.lastIndexOf('/')+1);
+		me._deleteImage(null,imageName); 
+	},
+	
+	//private
+	_openCropDialogClick: function()
 	{
 		 var me = this;
 		 var imageSrc = me.down('[name=src]').getValue();
@@ -1556,7 +1622,6 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 		if(!(/^https:\/\//.test(src))) this.previewComponent.setSrc(src+'?'+Math.floor(Math.random()*111111));
 		else this.previewComponent.setSrc(src);
     },
-	
 	
 	//private
 	//Resizes the image to fit on the preview panel

@@ -36,6 +36,13 @@ if(isset($_REQUEST['action']))
 			print_r( json_encode( rotateImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc) ) );
 		break;
 		
+		case 'resize':
+			$width         = isset($_REQUEST["width"])?intval($_REQUEST["width"]):0;
+			$height        = isset($_REQUEST["height"])?intval($_REQUEST["height"]):0;		
+			$imageSrc      = isset($_REQUEST["image"])?($_REQUEST["image"]):'';
+			print_r( json_encode( resizeImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc,$width,$height) ) );
+		break;
+		
 		case 'imagesList':
 			$limit         = isset($_REQUEST["limit"])?intval($_REQUEST["limit"]):10;
 			$start         = isset($_REQUEST["start"])?intval($_REQUEST["start"]):0;
@@ -186,7 +193,6 @@ function cropImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imagesThumbsUrl,$im
 	{
 		// make the cropped image
 		$thumb = PhpThumbFactory::create($imagesPath.$imageName);
-		$thumb->preserveAlpha = true;
 		$thumb->crop($left, $top, $width, $height);
 		$thumb->save($imagesPath.$imageName);
 		
@@ -222,8 +228,41 @@ function rotateImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc)
 	{
 		// make the cropped image
 		$thumb = PhpThumbFactory::create($imagesPath.$imageName);
-		$thumb->preserveAlpha = true;
 		$thumb->rotateImageNDegrees(-90);
+		$thumb->save($imagesPath.$imageName);
+		
+		// make the thumbnail for the cropped image
+		$thumb->adaptiveResize(64, 64);
+		$thumb->save($imagesThumbsPath.$imageName);
+		
+		return array(
+			'success'	=> true,
+			'message'	=> 'Success',
+			'data'		=>  array('src'=>$imagesUrl.$imageName),
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+	catch (Exception $e)
+	{
+		return array(
+			'success'	=> false,
+			'message'	=> 'Error',
+			'data'		=>  'Error with rotate operation.'.$e,
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+}
+
+function resizeImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc, $width, $height)
+{
+	$imageName = preg_replace('/[^(\x20-\x7F)]*/','', basename($imageSrc));
+	
+	try
+	{
+		$thumb = PhpThumbFactory::create($imagesPath.$imageName, array('resizeUp' => true));
+		$thumb->resize($width, $height);
 		$thumb->save($imagesPath.$imageName);
 		
 		// make the thumbnail for the cropped image
