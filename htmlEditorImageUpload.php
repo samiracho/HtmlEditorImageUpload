@@ -1,12 +1,13 @@
 <?php
-
+require_once 'thumbnailer/ThumbLib.inc.php';
+			
 // change these parameters to fit your server config
-$allowedFormats    = ".jpg,.jpeg,.gif,.png";								// Allowed image formats
-$maxSize           = "1024000"; 											// Max image size. 10485760 = 10MB
+$allowedFormats    = "jpg,jpeg,gif,png";								// Allowed image formats
+$maxSize           = "102400"; 											// Max image size. 10485760 = 10MB
 $imagesPath        = "uploads/"; 											// path where the files will be uploaded to the server
 $imagesThumbsPath  = "uploads/thumbs/"; 											// path where the image thumbs will be uploaded to the server
-$imagesTumbsUrl    = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/thumbs/";
-$imagesUrl         = "http://www.asociacionhispanosiriacv.com/imageuploadPlugin2/uploads/"; 	// url to the images
+$imagesTumbsUrl    = "http://www.racho.es/examples/HtmlEditorImageUpload/uploads/thumbs/";
+$imagesUrl         = "http://www.racho.es/examples/HtmlEditorImageUpload/uploads/"; 	// url to the images
 //$imagesTumbsUrl    = "http://localhost/HtmlEditorImageUpload/uploads/thumbs/";
 //$imagesUrl         = "http://localhost/HtmlEditorImageUpload/uploads/"; 	// url to the images
 $createThumbnails  = true;
@@ -17,6 +18,22 @@ if(isset($_REQUEST['action']))
 	{
 		case 'upload':		
 			print_r( json_encode( uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$createThumbnails,$imagesTumbsUrl,$imagesThumbsPath) ) );
+		break;
+		
+		case 'crop':
+		
+			$imageSrc      = isset($_REQUEST["image"])?($_REQUEST["image"]):'';
+			$width         = isset($_REQUEST["width"])?intval($_REQUEST["width"]):0;
+			$height        = isset($_REQUEST["height"])?intval($_REQUEST["height"]):0;
+			$offsetLeft    = isset($_REQUEST["offsetLeft"])?intval($_REQUEST["offsetLeft"]):0;
+			$offsetTop     = isset($_REQUEST["offsetTop"])?intval($_REQUEST["offsetTop"]):0;
+			$zoom          = isset($_REQUEST["zoom"])?intval($_REQUEST["zoom"]):1;
+			print_r( json_encode( cropImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imagesTumbsUrl,$imageSrc,$width,$height,$offsetLeft,$offsetTop, $zoom, $allowedFormats) ) );
+		break;
+		
+		case 'rotate':		
+			$imageSrc      = isset($_REQUEST["image"])?($_REQUEST["image"]):'';
+			print_r( json_encode( rotateImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc) ) );
 		break;
 		
 		case 'imagesList':
@@ -33,18 +50,24 @@ if(isset($_REQUEST['action']))
 	}
 }
 
+function checkAllowedFormats($imageName, $allowedFormats)
+{
+	// quitamos caracteres extraños
+	$imageName = preg_replace('/[^(\x20-\x7F)]*/','', $imageName);
+	
+	// extensión del archivo
+	$ext       =  strtolower( substr($imageName, strpos($imageName,'.')+1, strlen($imageName)-1) );
+
+	if(!in_array($ext,explode(',', $allowedFormats))) return false;
+	else return true;
+}
+
 function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$createThumbnails=false,$imagesTumbsUrl,$imagesThumbsPath)
 {	
 	global $_FILES;
 	$result = array();
 	
-	// quitamos caracteres extraños
-	$nombreArchivo = preg_replace('/[^(\x20-\x7F)]*/','', $_FILES['photo-path']['name']);
-	
-	// extensión del archivo
-	$ext           =  strtolower( substr($nombreArchivo, strpos($nombreArchivo,'.'), strlen($nombreArchivo)-1) );
-
-	if(!in_array($ext,explode(',', $allowedFormats)))
+	if(!checkAllowedFormats($_FILES['photo-path']['name'], $allowedFormats))
 	{
 		$result= array(
             'success'	=> false,
@@ -56,6 +79,9 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$
 		return $result;
 	}
 
+	$nombreArchivo = preg_replace('/[^(\x20-\x7F)]*/','', $_FILES['photo-path']['name']);
+	$ext           =  strtolower( substr($nombreArchivo, strpos($nombreArchivo,'.')+1, strlen($nombreArchivo)-1) );
+	
 	/*while (file_exists($imagesPath.$nombreArchivo)) {
 		$prefijo       = substr(md5(uniqid(rand())),0,6);
 		$nombreArchivo = $prefijo.'_'.$nombreArchivo;
@@ -88,22 +114,11 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$
 
 	if(move_uploaded_file($_FILES['photo-path']['tmp_name'],$imagesPath.$nombreArchivo))
 	{		
-		if($createThumbnails && $ext!=".gif")
-		{
-			// create the thumbnail
-			require_once 'easyphpthumbnail.class.php';
-				
-			$thumb = new easyphpthumbnail;
-
-			// Set thumbsize - automatic resize for landscape or portrait
-			$thumb -> Thumbsize = 64;
-			$thumb -> Square = true;
-			$thumb -> Cropimage = array(3,0,0,0,0,0);
-			//$thumb -> Backgroundcolor = '#D0DEEE';
-			//$thumb -> Shadow = true;
-			$thumb -> Thumblocation = $imagesThumbsPath;
-			$thumb -> Thumbsaveas = 'jpg';
-			$thumb -> Createthumb($imagesPath.$nombreArchivo,'file');
+		if($createThumbnails)
+		{			
+			$thumb = PhpThumbFactory::create($imagesPath.$nombreArchivo);
+			$thumb->adaptiveResize(64, 64);
+			$thumb->save($imagesThumbsPath.$nombreArchivo);
 		}
 		
 		$result= array(
@@ -157,6 +172,84 @@ function deleteImage($imagesPath,$imagesThumbsPath, $image = null)
 	}
 }
 
+function cropImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imagesThumbsUrl,$imageSrc,$width,$height,$offsetLeft,$offsetTop, $zoom, $allowedFormats)
+{
+	$imageName = preg_replace('/[^(\x20-\x7F)]*/','', basename($imageSrc));
+		
+	$zoom      = $zoom/100;
+	$left      = $offsetLeft > 0 ? round($offsetLeft/$zoom) : 0;
+	$width     = round($width/$zoom);		
+	$top       = $offsetTop > 0 ? round($offsetTop/$zoom) : 0;
+	$height    = round($height/$zoom);
+	
+	try
+	{
+		// make the cropped image
+		$thumb = PhpThumbFactory::create($imagesPath.$imageName);
+		$thumb->preserveAlpha = true;
+		$thumb->crop($left, $top, $width, $height);
+		$thumb->save($imagesPath.$imageName);
+		
+		// make the thumbnail for the cropped image
+		$thumb->adaptiveResize(64, 64);
+		$thumb->save($imagesThumbsPath.$imageName);
+		
+		return array(
+			'success'	=> true,
+			'message'	=> 'Success',
+			'data'		=>  array('src'=>$imagesUrl.$imageName),
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+	catch (Exception $e)
+	{
+		return array(
+			'success'	=> false,
+			'message'	=> 'Error',
+			'data'		=>  'Error with rotate operation.'.$e,
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+}
+
+function rotateImage($imagesPath,$imagesThumbsPath,$imagesUrl,$imageSrc)
+{
+	$imageName = preg_replace('/[^(\x20-\x7F)]*/','', basename($imageSrc));
+	
+	try
+	{
+		// make the cropped image
+		$thumb = PhpThumbFactory::create($imagesPath.$imageName);
+		$thumb->preserveAlpha = true;
+		$thumb->rotateImageNDegrees(-90);
+		$thumb->save($imagesPath.$imageName);
+		
+		// make the thumbnail for the cropped image
+		$thumb->adaptiveResize(64, 64);
+		$thumb->save($imagesThumbsPath.$imageName);
+		
+		return array(
+			'success'	=> true,
+			'message'	=> 'Success',
+			'data'		=>  array('src'=>$imagesUrl.$imageName),
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+	catch (Exception $e)
+	{
+		return array(
+			'success'	=> false,
+			'message'	=> 'Error',
+			'data'		=>  'Error with rotate operation.'.$e,
+			'total'		=> 1,
+			'errors'	=> ''
+		);
+	}
+}
+
 function getImages($imagesPath, $imagesUrl,$imagesTumbsUrl,$imagesThumbsPath, $allowedFormats, $start = 0, $limit = 10,$query ="")
 {
 	// array to hold return value
@@ -168,7 +261,7 @@ function getImages($imagesPath, $imagesUrl,$imagesTumbsUrl,$imagesThumbsPath, $a
     while ($file = readdir($handler)) {
 	
 		// extensión del archivo
-		$ext =  strtolower( substr($file, strpos($file,'.'), strlen($file)-1) );
+		$ext =  strtolower( substr($file, strpos($file,'.')+1, strlen($file)-1) );
 
 		if(in_array($ext,explode(',', $allowedFormats)))
 		{		
@@ -178,6 +271,7 @@ function getImages($imagesPath, $imagesUrl,$imagesTumbsUrl,$imagesThumbsPath, $a
 				if( $query == "" || ($query != "" && stripos($file,$query)!== false) ){
 					
 					$thumbSrc = file_exists($imagesThumbsPath.$file) ? $imagesTumbsUrl.$file : $imagesUrl.$file;
+					$thumbSrc = strpos($thumbSrc, "https://") ? $thumbSrc : $thumbSrc.'?'.rand(1, 10000);
 					$results[] = array('fullname'=>$file,'name'=>$resume,'src'=>$imagesUrl.$file,'thumbSrc'=>$thumbSrc);
 				}
 			}
