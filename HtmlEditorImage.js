@@ -505,6 +505,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
     extend: 'Ext.window.Window',
 	imgSrc:'',
+	randomId:'',
 	bodyCls:'x-htmleditor-imageupload-cropdialog',
 	naturalWidth:0,
 	naturalHeight:0,
@@ -530,7 +531,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 				{
 					xtype: 'image',
 					itemId:'imageToCrop',
-					src: me.imgSrc,
+					src: me.imgSrc+'?'+Math.floor(Math.random()*111111),
 					listeners: {
 						afterrender: me._attachOnLoadEvent,
 						scope:me
@@ -646,7 +647,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 						method: 'POST',
 						params: {
 							'action': 'crop',
-							'image': me.down('#imageToCrop').getEl().dom.src,
+							'image': me.imgSrc,
 							'zoom': me.down('#zoomSlider').getValue(),
 							'width': me.myResizer.getEl().dom.offsetWidth,
 							'height': me.myResizer.getEl().dom.offsetHeight,
@@ -1605,10 +1606,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         }
         if (combo.up('form').down('#constraintProp').pressed) {
             var ratio = combo.up('form').down('#ratio').getValue();
-            var val = ratio > 1 ? newValue / ratio : ratio * newValue;
+
             // if I dont suspendEvents IE 8 fires change event and this function enters in a loop
             sizeField.suspendEvents();
-            sizeField.setRawValue(Math.round((val)));
+            sizeField.setRawValue(Math.round((ratio * newValue)));
         }
     },
 	
