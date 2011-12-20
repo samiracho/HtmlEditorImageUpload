@@ -818,7 +818,10 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     needsRefresh: false,
                     checkChangeBuffer: 500,
                     listeners: {		
-                        'expand': me._comboExpand,
+                        'expand': {
+							fn: me._comboExpand,
+							scope:me
+						},
                         'change': {
 							fn: me._comboChange,
 							scope: me
@@ -828,7 +831,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							scope: me
 						}
 					},
-                    tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center">{name}</td></tr></table></tpl>',
+                    tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center;font-size:12px">{name}</td></tr></table></tpl>',
                     listConfig: {
                         loadingText: 'Searching...',
                         emptyText: 'No matching posts found.',
@@ -1323,6 +1326,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 	//private
 	_comboExpand: function (combo, options) {
 		// I have to do this here because if I do store.load after Image Upload or Image Delete, the paging toolbar disappears.
+		var me = this;
 		if (combo.needsRefresh) {
 			combo.store.currentPage = 1;
 			combo.store.load({
