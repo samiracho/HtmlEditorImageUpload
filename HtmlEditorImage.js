@@ -158,58 +158,25 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         // attach context menu
         if(me.enableContextMenu)me._contextMenu();
 
-        // attach events to control when the user interacts with an image
-        me.flyDoc.on({
-            'mouseup' : {
-				fn: me._docMouseUp,
-				scope: me
-			},
-			'dblclick' : {
-				fn: me._dblClick,
-				scope: me
-			},
-			'paste' : {
-				fn: me._removeSelectionHelpers,
-				scope: me
-			}
-        });
+		// attach events to control when the user interacts with an image
+		me.cmp.mon(me.flyDoc, 'dblclick', me._dblClick, me);
+		me.cmp.mon(me.flyDoc, 'mouseup', me._docMouseUp, me);
+		me.cmp.mon(me.flyDoc, 'paste', me._removeSelectionHelpers, me);
 		
         // mousewheel resize event
-        if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {
-            me.flyDoc.on({
-                mousewheel: me._wheelResize,
-                scope: me
-            });
+        if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {	
+			me.cmp.mon(me.flyDoc, 'mousewheel', me._wheelResize, me);
         }
 
         // mouse drag resize event
-        if (Ext.isWebKit && me.dragResize) {
-            me.flyDoc.on({
-                drag: me._dragResize,
-                scope: me
-            });
+        if (Ext.isWebKit && me.dragResize) {	
+			me.cmp.mon(me.flyDoc, 'drag', me._dragResize, me);
         }
     },
 	
     beforeDestroy: function () {
         var me = this;
-		me.flyDoc.un({
-            'mouseup' : {
-				fn: me._docMouseUp,
-				scope: me
-			},
-			'dblclick' : {
-				fn: me._dblClick,
-				scope: me
-			},
-			'paste' : {
-				fn: me._removeSelectionHelpers,
-				scope: me
-			}
-        });
         if (me.uploadDialog) me.uploadDialog.destroy();
-        if (me.wheelResize) me.flyDoc.un('mousewheel', me._wheelResize, me);
-        if (me.dragResize) me.flyDoc.un('drag', me._dragResize, me);
         if (me.contextMenu) contextMenu.destroy();
     },
 	
@@ -322,7 +289,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         var imagesList = doc.body.getElementsByTagName("IMG");
         var imagesListLength = imagesList.length;
 
-        //insertAtCursor function is completely useless for this purpose, so I need to write all this stuff to insert html at cursor position	
+        //insertAtCursor function is completely useless for this purpose, so I need to write all this stuff to insert html at caret position	
         // I need to know if the browser uses the W3C way or the Internet Explorer method
         var ieBrowser = doc.selection && doc.selection.createRange ? true : false;
         var nonIeBrowser = win.getSelection && win.getSelection().getRangeAt ? true : false;
@@ -500,7 +467,6 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         } else me.imageButton.toggle(false);
     }
 });
-
 
 Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
     extend: 'Ext.window.Window',
