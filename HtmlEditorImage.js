@@ -618,7 +618,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
 							'width': me.myResizer.getEl().dom.offsetWidth,
 							'height': me.myResizer.getEl().dom.offsetHeight,
 							'offsetLeft': me.myResizer.getEl().dom.offsetLeft,
-							'offsetTop':me.myResizer.getEl().dom.offsetTop,
+							'offsetTop':me.myResizer.getEl().dom.offsetTop
 						},
 						success: function (response) {
 							
@@ -861,7 +861,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             type: 'hbox'
                         },
                         style: {
-                            border: '1px solid #ccc',
+                            border: '1px solid #ccc'
                         },
                         height: 130,
                         width: 130,
@@ -934,7 +934,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             enableToggle: true,
                             pressed: true,
                             style: {
-                                border: '0px',
+                                border: '0px'
                             },
                             width: 24,
                             height: 50,
