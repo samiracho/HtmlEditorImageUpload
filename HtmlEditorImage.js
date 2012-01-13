@@ -492,7 +492,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageCropDialog', {
             items: [
                 {
 					xtype:'container',
-					html:'<div id="myResizable" style="position: absolute;z-index:9999;"></div>',
+					html:'<div id="myResizable" style="position: absolute;z-index:9999;"></div>'
 				},
 				{
 					xtype: 'image',
