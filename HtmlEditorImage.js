@@ -344,7 +344,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             iframeDoc: doc,
             imageToEdit: image,
             pageSize: me.pageSize,
-            imageButton: me.imageButton,
+            imageButton: me.imageButton
         });
 
         me.uploadDialog.on('close', function () {
