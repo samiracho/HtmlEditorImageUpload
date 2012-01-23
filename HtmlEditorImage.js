@@ -79,6 +79,27 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
      * Default 'htmlEditorImageUpload.php'
      */
     submitUrl: 'htmlEditorImageUpload.php',
+	
+	/**
+     * @cfg {String} serverSideEdit
+     * Enables/disables server side image editing buttons.
+     * Default false
+     */
+    disableServerSideEdit: false,
+	
+	/**
+     * @cfg {String} serverSideEdit
+     * Enables/disables server side image deletion.
+     * Default false
+     */
+    disableDelete: false,
+	
+	/**
+     * @cfg {String} styling
+     * Enables/disables image css styling.
+     * Default false
+     */
+    disableStyling: false,
 
     /**
      * @cfg {String} mamangerUrl
@@ -344,7 +365,10 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             iframeDoc: doc,
             imageToEdit: image,
             pageSize: me.pageSize,
-            imageButton: me.imageButton
+            imageButton: me.imageButton,
+			disableServerSideEdit: me.serverSideEdit,
+			disableStyling:me.styling,
+			disableDelete : me.disableDelete
         });
 
         me.uploadDialog.on('close', function () {
@@ -755,7 +779,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                 ['pc', 'pc']
             ]
         });
-
+		
         me.items = [{
             xtype: 'form',
             name: 'imageUploadForm',
@@ -798,7 +822,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 							scope: me
 						}
 					},
-                    tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center;font-size:12px">{name}</td></tr></table></tpl>',
+                    tpl: '<tpl for="."><table class="x-boundlist-item" style="width:50%;float:left"><tr><td style="vertical-align:top;width:12px"><tpl if="'+me.disableDelete+' == false"><a title="' + me.t('Delete Image') + '" href="#" img_fullname="{fullname}" class="x-htmleditor-imageupload-delete"></a></tpl></td><td><div class="x-htmleditor-imageupload-thumbcontainer"><img src="{thumbSrc}"/></div></td></tr><tr><td colspan="2" style="text-align:center;font-size:12px">{name}</td></tr></table></tpl>',
                     listConfig: {
                         loadingText: 'Searching...',
                         emptyText: 'No matching posts found.',
@@ -970,10 +994,12 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                             fieldLabel: 'Real Size',
                             itemId: 'realSize'
                         }]
-                    },{
+                    },
+					{
 						xtype: 'fieldcontainer',
-                        layout: {
-                            type: 'table',
+						hidden: me.serverSideEdit,
+						layout: {
+							type: 'table',
 							columns:4
 						},
 						defaults:{
@@ -982,37 +1008,37 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 						},
 						padding:'0 0 0 12',
 						items:[{
-							xtype:'button',
-							iconCls:'x-htmleditor-imageupload-cropbutton',
-							itemId:'cropButton',
-							disabled:true,
-							handler: me._openCropDialogClick,
-							scope:me,
-							tooltip:'Open crop window'
-						},{
-							xtype:'button',
-							itemId:'rotateButton',
-							disabled:true,
-							iconCls:'x-htmleditor-imageupload-rotatebutton',
-							handler: me._rotateImageClick,
-							scope:me,
-							tooltip:'Rotate image 90º'
-						},{
-							xtype:'button',
-							itemId:'resizeButton',
-							disabled:true,
-							iconCls:'x-htmleditor-imageupload-resizebutton',
-							handler: me._resizeImageClick,
-							scope:me,
-							tooltip:'Resize Image'
-						},{
-							xtype:'button',
-							itemId:'deleteButton',
-							disabled:true,
-							iconCls:'x-htmleditor-imageupload-deletebutton',
-							handler: me._deleteImageClick,
-							scope:me,
-							tooltip:'Delete Image from server'
+								xtype:'button',
+								iconCls:'x-htmleditor-imageupload-cropbutton',
+								itemId:'cropButton',
+								disabled:true,
+								handler: me._openCropDialogClick,
+								scope:me,
+								tooltip:'Open crop window'
+							},{
+								xtype:'button',
+								itemId:'rotateButton',
+								disabled:true,
+								iconCls:'x-htmleditor-imageupload-rotatebutton',
+								handler: me._rotateImageClick,
+								scope:me,
+								tooltip:'Rotate image 90º'
+							},{
+								xtype:'button',
+								itemId:'resizeButton',
+								disabled:true,
+								iconCls:'x-htmleditor-imageupload-resizebutton',
+								handler: me._resizeImageClick,
+								scope:me,
+								tooltip:'Resize Image'
+							},{
+								xtype:'button',
+								itemId:'deleteButton',
+								disabled:true,
+								iconCls:'x-htmleditor-imageupload-deletebutton',
+								handler: me._deleteImageClick,
+								scope:me,
+								tooltip:'Delete Image from server'
 						}]
 					},{
                         xtype: 'hiddenfield',
@@ -1026,6 +1052,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
                     }]
                 }, {
                     xtype: 'fieldset',
+					hidden:me.styling,
                     title: me.t('Style'),
                     collapsible: true,
                     layout: 'anchor',
@@ -1406,43 +1433,45 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
 		
 		var me = this;
 		
-		Ext.Msg.show({
-			title: me.t('Confirmation'),
-			msg: me.t('Are you sure you want to delete this image?'),
-			buttons: Ext.Msg.YESNO,
-			closable: false,
-			fn: function (btn) {
-				if (btn == 'yes') {
-					Ext.Ajax.request({
-						url: me.managerUrl,
-						method: 'POST',
-						params: {
-							'action': 'delete',
-							'image': a.getAttribute ? a.getAttribute('img_fullname') : a
-						},
-						success: function (response) {
-							
-							var result = Ext.JSON.decode(response.responseText);
-							if(result.success)
-							{
-								// delete the image from the list
-								var combo = me.down('[name=src]');
+		if (!me.disableDelete){
+			Ext.Msg.show({
+				title: me.t('Confirmation'),
+				msg: me.t('Are you sure you want to delete this image?'),
+				buttons: Ext.Msg.YESNO,
+				closable: false,
+				fn: function (btn) {
+					if (btn == 'yes') {
+						Ext.Ajax.request({
+							url: me.managerUrl,
+							method: 'POST',
+							params: {
+								'action': 'delete',
+								'image': a.getAttribute ? a.getAttribute('img_fullname') : a
+							},
+							success: function (response) {
+								
+								var result = Ext.JSON.decode(response.responseText);
+								if(result.success)
+								{
+									// delete the image from the list
+									var combo = me.down('[name=src]');
 
-								//if I do here a combo.store.load() to refresh, the paging toolbar disappears
-								// so I'll do it on combo expand event
-								combo.needsRefresh = true;
+									//if I do here a combo.store.load() to refresh, the paging toolbar disappears
+									// so I'll do it on combo expand event
+									combo.needsRefresh = true;
 
-								combo.setValue('');
-								me.down('form').getForm().reset();
-								me._setPreviewImage('blank', true);
-							}else{
-								Ext.Msg.alert(me.t('Error'), 'Error: ' + result.errors);
+									combo.setValue('');
+									me.down('form').getForm().reset();
+									me._setPreviewImage('blank', true);
+								}else{
+									Ext.Msg.alert(me.t('Error'), 'Error: ' + result.errors);
+								}
 							}
-						}
-					});
+						});
+					}
 				}
-			}
-		});
+			});
+		}
 	},
 	
 	//private
@@ -1613,18 +1642,20 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
 		
 		// enable server image editing buttons
-		if(image.src!='' && image.src!='blank' && image.src.search(document.domain) >= 0)
-		{
-			myForm.down('#cropButton').enable();
-			myForm.down('#rotateButton').enable();
-			myForm.down('#resizeButton').enable();
-			myForm.down('#deleteButton').enable();
-		}
-		else{
-			myForm.down('#cropButton').disable();
-			myForm.down('#rotateButton').disable();
-			myForm.down('#resizeButton').disable();
-			myForm.down('#deleteButton').disable();
+		if (comp.serverSideEdit){
+			if(image.src!='' && image.src!='blank' && image.src.search(document.domain) >= 0)
+			{
+				myForm.down('#cropButton').enable();
+				myForm.down('#rotateButton').enable();
+				myForm.down('#resizeButton').enable();
+				myForm.down('#deleteButton').enable();
+			}
+			else{
+				myForm.down('#cropButton').disable();
+				myForm.down('#rotateButton').disable();
+				myForm.down('#resizeButton').disable();
+				myForm.down('#deleteButton').disable();
+			}
 		}
 
         if (comp.resetImageSize == true) {

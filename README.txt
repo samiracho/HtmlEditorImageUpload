@@ -57,6 +57,15 @@ submitUrl:
 	Upload failure example
 	{"success":false,"message":"Error","data":"","total":"0","errors":"The file you attempted to upload is too large."}
 
+disableServerSideEdit:
+	Enables/disables server side image editing buttons
+	
+disableDelete:	
+	Enables/disables server side image editing
+	
+disableStyling: 
+	Enables/disables image css styling.
+	
 managerUrl:
 	Url to get the images folder list and delete them.
 	The images list will be a json string with the following format
