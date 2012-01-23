@@ -61,7 +61,7 @@ disableServerSideEdit:
 	Enables/disables server side image editing buttons
 	
 disableDelete:	
-	Enables/disables server side image editing
+	Enables/disables server side image deletion
 	
 disableStyling: 
 	Enables/disables image css styling.
