@@ -58,13 +58,16 @@ submitUrl:
 	{"success":false,"message":"Error","data":"","total":"0","errors":"The file you attempted to upload is too large."}
 
 disableServerSideEdit:
-	Enables/disables server side image editing buttons
+	Enables/disables server side image editing buttons.
+	By default false.
 	
 disableDelete:	
-	Enables/disables server side image deletion
+	Enables/disables server side image deletion.
+	By default false.
 	
 disableStyling: 
 	Enables/disables image css styling.
+	By default false.
 	
 managerUrl:
 	Url to get the images folder list and delete them.
