@@ -1642,7 +1642,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         myForm.down('#realSize').setValue(image.width + 'x' + image.height);
 		
 		// enable server image editing buttons
-		if (comp.serverSideEdit){
+		if (!comp.disableServerSideEdit){
 			if(image.src!='' && image.src!='blank' && image.src.search(document.domain) >= 0)
 			{
 				myForm.down('#cropButton').enable();
