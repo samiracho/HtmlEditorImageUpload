@@ -723,6 +723,13 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
             pageSize: me.pageSize
         });
 
+		// if I dont remove store records I get an internalId exception when refresh button is clicked
+		imageStore.on('beforeload', function (store)
+		{
+			while (store.getCount(0) > 0)
+			store.removeAt(0);
+		});
+		
         var alignStore = Ext.create('Ext.data.ArrayStore', {
             autoDestroy: true,
             idIndex: 0,
