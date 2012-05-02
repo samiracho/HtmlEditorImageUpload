@@ -1621,8 +1621,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         if (!this.previewComponent) this.previewComponent = this.down('#vistaPrevia');
         this.previewComponent.setWidth('');
         this.previewComponent.setHeight('');
-
-        this.down('#vistaPrevia').resetImageSize = resetImageSize;
+        this.previewComponent.resetImageSize = resetImageSize;
        
 		// when I change the src the _resizePreviewImage method will be fired.
         // It happens because _resizePreviewImage is attached to the image onload event
@@ -1641,8 +1640,11 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         var constrainComp = myForm.down('#constraintProp');
         var widthComp = myForm.down('[name=width]');
         var heightComp = myForm.down('[name=height]')
-
-        // save real image size
+		
+		// ExtJS 4.1 Need to remove the preview image style to get the right sizes
+		image.removeAttribute("style");
+        
+		// save real image size
         myForm.down('#naturalWidth').setValue(image.width);
         myForm.down('#naturalHeight').setValue(image.height);
         myForm.down('#ratio').setValue(image.height / image.width);
