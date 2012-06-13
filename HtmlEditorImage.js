@@ -152,7 +152,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
      * Default 'css/iframe_styles.css'
      */
     iframeCss: 'css/iframe_styles.css',
-    t: function t(string) {
+    t: function (string) {
         return this.lang[string] ? this.lang[string] : string;
     },
 	
