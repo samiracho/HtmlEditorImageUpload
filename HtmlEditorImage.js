@@ -180,43 +180,44 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
         if(me.enableContextMenu)me._contextMenu();
 
 		// attach events to control when the user interacts with an image
-		me.cmp.mon(me.flyDoc, 'dblclick', me._dblClick, me);
+		me.cmp.mon(me.flyDoc, 'dblclick', me._dblClick, me, {delegate : "img"});
 		me.cmp.mon(me.flyDoc, 'mouseup', me._docMouseUp, me);
 		me.cmp.mon(me.flyDoc, 'paste', me._removeSelectionHelpers, me);
 		
         // mousewheel resize event
         if ((Ext.isWebKit || Ext.isOpera) && me.wheelResize) {	
-			me.cmp.mon(me.flyDoc, 'mousewheel', me._wheelResize, me);
+			me.cmp.mon(me.flyDoc, 'mousewheel', me._wheelResize, me, {delegate : "img"});
         }
 
         // mouse drag resize event
         if (Ext.isWebKit && me.dragResize) {	
-			me.cmp.mon(me.flyDoc, 'drag', me._dragResize, me);
+			me.cmp.mon(me.flyDoc, 'drag', me._dragResize, me, {delegate : "img"});
         }
     },
 	
     beforeDestroy: function () {
         var me = this;
         if (me.uploadDialog) me.uploadDialog.destroy();
-        if (me.contextMenu) contextMenu.destroy();
+        if (me.contextMenu) me.contextMenu.destroy();
     },
 	
     onRender: function () {
 
-        var imageButton = Ext.create('Ext.button.Button', {
+        var me = this;
+		var imageButton = Ext.create('Ext.button.Button', {
             iconCls: 'x-htmleditor-imageupload',
-            handler: this._openImageDialog,
-            scope: this,
-            tooltip: this.t('Insert/Edit Image'),
-            overflowText: this.t('Insert/Edit Image')
+            handler: me._openImageDialog,
+            scope: me,
+            tooltip: me.t('Insert/Edit Image'),
+            overflowText: me.t('Insert/Edit Image')
         });
 
-        var toolbar = this.cmp.getToolbar();
+        var toolbar = me.cmp.getToolbar();
 
         // we save a reference to this button to use it later
-        this.imageButton = imageButton;
+        me.imageButton = imageButton;
 
-        this.cmp.getToolbar().add(imageButton);
+        me.cmp.getToolbar().add(imageButton);
 
     },
 	
@@ -244,27 +245,25 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
 
             var contextMenu = Ext.create('Ext.menu.Menu', {
                 closeAction: 'hide',
-                items: [
-                editAction, deleteAction]
+                items: [editAction, deleteAction]
             });
             me.contextMenu = contextMenu;
         }
 
-        me.flyDoc.on({
-            contextmenu: function (e, htmlEl) {
-                e.stopEvent();
-                e.stopPropagation();
-                var iframePos = this.cmp.getPosition();
-                var elementPos = e.getXY();
-                var pos = [iframePos[0] + elementPos[0], iframePos[1] + elementPos[1]];
-                if (e.getTarget().tagName == 'IMG');
-                Ext.Function.defer(function () {
-                    me.contextMenu.showAt(pos)
-                }, 100);
-
-            },
-            scope: me
-        });
+		me.cmp.mon(me.flyDoc, 'contextmenu', function (e, htmlEl) {
+				e.stopEvent();
+				e.stopPropagation();
+				var iframePos = this.cmp.getPosition();
+				var elementPos = e.getXY();
+				var pos = [iframePos[0] + elementPos[0], iframePos[1] + elementPos[1] + 30];
+				if (e.getTarget().tagName == 'IMG');
+				Ext.Function.defer(function () {
+					me.contextMenu.showAt(pos)
+				}, 100);
+			},
+			me,
+			{delegate:'img'}
+		);
     },
 	
     //private
