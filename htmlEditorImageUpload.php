@@ -89,10 +89,10 @@ function uploadHtmlEditorImage($allowedFormats,$maxSize,$imagesPath,$imagesUrl,$
 	$nombreArchivo = preg_replace('/[^(\x20-\x7F)]*/','', $_FILES['photo-path']['name']);
 	$ext           =  strtolower( substr($nombreArchivo, strpos($nombreArchivo,'.')+1, strlen($nombreArchivo)-1) );
 	
-	/*while (file_exists($imagesPath.$nombreArchivo)) {
+	while (file_exists($imagesPath.$nombreArchivo)) {
 		$prefijo       = substr(md5(uniqid(rand())),0,6);
 		$nombreArchivo = $prefijo.'_'.$nombreArchivo;
-	}*/
+	}
 
 	if(filesize($_FILES['photo-path']['tmp_name']) > $maxSize)
 	{
