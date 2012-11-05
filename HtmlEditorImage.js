@@ -331,7 +331,7 @@ Ext.define('Ext.ux.form.HtmlEditor.imageUpload', {
             range = sel.createRange();
         }
 
-        // to make the things easier, if the user has an image selected when he presses the image upload button, I mark it with a custom attr "iu_edit".
+        // to make the things easier, if the user has an image selected when he presses the image upload button, I'll mark it with a custom attr "iu_edit".
         // afterwards, if the user presses the ok button I just need to find the image with that attr, and replace it with the new one.
         if (Ext.isIE && sel.type == "Control" && range.item(0).tagName == "IMG") {
             image = r;
@@ -1608,7 +1608,7 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         if (combo.up('form').down('#constraintProp').pressed) {
             var ratio = combo.up('form').down('#ratio').getValue();
 
-            // if I dont suspendEvents IE 8 fires change event and this function enters in a loop
+            // if I dont suspendEvents IE 8 fires change event and this function enters into a loop
             sizeField.suspendEvents();
             sizeField.setRawValue(Math.round((ratio * newValue)));
         }
