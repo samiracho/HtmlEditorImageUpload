@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <title>HtmlEditor Image Upload Plugin</title>
+    <link rel="stylesheet" type="text/css" href="../extjs-4.1.1-rc2/resources/css/ext-all.css" />
+    <script type="text/javascript" src="../extjs-4.1.1-rc2/resources/css/ext-all.js"></script>
+	
+	<script type="text/javascript" src="HtmlEditorImage.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/styles.css" />
+
+    <!-- Example -->
+    <script type="text/javascript">
+		Ext.require('Ext.form.*');
+
+		Ext.onReady(function() {
+		
+			Ext.QuickTips.init();
+		
+			Ext.createWidget('form', {
+				renderTo: 'htmleditor-panel',
+				title: 'Image Upload Plugin Demo',
+				bodyPadding: 5,
+				frame: true,
+				items: [{
+                    xtype: 'htmleditor',
+					plugins: [new Ext.create('Ext.ux.form.HtmlEditor.imageUpload', {})],
+                    height: 400,
+                    style: 'background-color: white;',
+                    anchor: '100%',
+					value: '<h1>Welcome to Image Upload Plugin Demo </h1><h3>(Upload limited to 100KB)</h3><img src="https://ssl.gstatic.com/images/icons/feature/filing_cabinet-g42.png" style="float:left;width:64px;height:64px">Check the last button.<img src="img/image_upload.png" style="display:inline"> It will allow You to insert and modify inserted images.<br>In order to modify an image, just click on it and click on the Image Upload button. You will be able to change the alignment, margins, paddings e.t.c.&nbsp;<br><br>I implemented a little script to allow image resizing on drag and on mousewheel in WebKit browsers (Chrome/Safari). Just click on the image and drag it, or use the mousewheel to change its size.<br><br>Please, before using the upload functionallity, make sure that php is on and modify htmlEditorImageUpload.php. You must change $imagesPath and $imagesUrl to suit your server settings.<br><br>$imagesPath must point to the path where the images will be uploaded. For example on a windows Wamp installation will be something like<b> "c:&#92;&#92;wamp&#92;&#92;www&#92;&#92;imageuploadPlugin&#92;&#92;uploads&#92;&#92;"</b><br><br><br>$imagesUrl must point to the http path where the images will be accesible. For example on a Windows Wamp installation will be like <b>"http:\\\\localhost\\imageuploadPlugin\\uploads\\"</b><br>'
+                }]
+
+			});
+		});
+	
+	</script>
+</head>
+<body>
+	<div id="htmleditor-panel" style="width:600px;margin:100px auto"></div>
+</body>
+</html>
