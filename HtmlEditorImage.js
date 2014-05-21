@@ -1622,10 +1622,18 @@ Ext.define('Ext.ux.form.HtmlEditor.ImageDialog', {
         this.previewComponent.setHeight('');
         this.previewComponent.resetImageSize = resetImageSize;
        
-		// when I change the src the _resizePreviewImage method will be fired.
-        // It happens because _resizePreviewImage is attached to the image onload event
-		if(!(/^https:\/\//.test(src))) this.previewComponent.setSrc(src+'?'+Math.floor(Math.random()*111111));
-		else this.previewComponent.setSrc(src);
+	    var img = new Image();	
+		img.src = src;
+
+		// if src is avaible show the image in preview panel
+		img.onload = function() {
+			// when I change the src the _resizePreviewImage method will be fired.
+			// It happens because _resizePreviewImage is attached to the image onload event
+			if(!(/^https:\/\//.test(src))) this.previewComponent.setSrc(src+'?'+Math.floor(Math.random()*111111));
+			else this.previewComponent.setSrc(src);
+		};
+	   
+		
     },
 	
 	//private
